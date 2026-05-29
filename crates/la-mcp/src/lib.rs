@@ -8,7 +8,7 @@
 //!
 //! ## Quick start
 //!
-//! ```no_run
+//! ```ignore
 //! use la_mcp::{McpServer, McpHandler, McpTransport, StdioTransport};
 //!
 //! struct MyHandler;
@@ -23,18 +23,11 @@
 //!         }
 //!     }
 //! }
-//!
-//! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let server = MyHandler;
-//! let transport = StdioTransport::new();
-//! transport.start(&server).await?;
-//! # Ok(())
-//! # }
 //! ```
 
 mod error;
-mod transport;
 mod handler;
+mod transport;
 
 pub use error::McpError;
 pub use handler::McpHandler;

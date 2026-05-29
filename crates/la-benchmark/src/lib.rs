@@ -19,6 +19,8 @@
 //!         // Run your benchmarks here
 //!         todo!()
 //!     }
+//!
+//!     fn report(&self) -> BenchmarkReport { todo!() }
 //! }
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
