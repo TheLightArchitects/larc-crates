@@ -1,0 +1,27 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/la-soulstrand",
+    "crates/la-benchmark",
+    "crates/la-mcp",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/TheLightArchitect/la-crates"
+rust-version = "1.85"
+
+[workspace.dependencies]
+# Internal
+la-soulstrand = { path = "crates/la-soulstrand" }
+la-benchmark = { path = "crates/la-benchmark" }
+la-mcp = { path = "crates/la-mcp" }
+
+# Shared
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+thiserror = "2"
+tracing = "0.1"

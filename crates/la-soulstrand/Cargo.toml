@@ -1,0 +1,30 @@
+[package]
+name = "la-soulstrand"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Knowledge graph + retrieval library with 4-signal RRF — 96.2% Recall@5 on LongMemEval"
+keywords = ["knowledge-graph", "retrieval", "rrf", "neo4j", "sqlite"]
+categories = ["database", "data-structures", "science"]
+
+[features]
+default = ["sqlite"]
+sqlite = ["rusqlite/bundled", "rusqlite/vtab"]
+helix = ["neo4rs", "fastembed"]
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+# Tier 1: SQLite
+rusqlite = { version = "0.34", optional = true }
+
+# Tier 2: Neo4j + embeddings
+neo4rs = { version = "0.8", optional = true }
+fastembed = { version = "4", optional = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
