@@ -54,8 +54,4 @@ pub trait BenchmarkSuite {
 mod longmemeval;
 
 #[cfg(feature = "longmemeval")]
-pub use longmemeval::{
-    LongMemEval,
-    LongMemEvalDataset,
-    RetrievalResult,
-};
+pub use longmemeval::{Document, LongMemEval, LongMemEvalDataset, RetrievalResult};
