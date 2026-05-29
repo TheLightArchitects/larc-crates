@@ -9,6 +9,7 @@ Public Rust crates from [The Light Architects](https://github.com/TheLightArchit
 | [`la-soulstrand`](./crates/la-soulstrand/) | Knowledge graph + retrieval library (96.2% Recall@5) | `sqlite` (default), `helix` (Neo4j) |
 | [`la-benchmark`](./crates/la-benchmark/) | Domain-agnostic performance benchmark framework | `longmemeval` |
 | [`la-mcp`](./crates/la-mcp/) | MCP server framework with multi-transport and squad routing | `stdio` (default), `http`, `websocket`, `lightsquad` |
+| [`la-ayinspan`](./crates/la-ayinspan/) | Observability span types — TraceSpan, Actor, W3C traceparent | None (zero runtime deps) |
 
 ## Quick start
 
@@ -24,6 +25,9 @@ cargo add la-benchmark --features longmemeval
 
 # MCP server with all transports
 cargo add la-mcp --features stdio,http,websocket
+
+# Observability span types (no tokio, no axum)
+cargo add la-ayinspan
 ```
 
 ## Architecture
