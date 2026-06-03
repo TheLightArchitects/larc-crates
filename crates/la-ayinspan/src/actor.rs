@@ -28,6 +28,12 @@ impl Actor {
         &self.0
     }
 
+    /// Alias for [`name`](Self::name) — backward-compatible accessor.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
     /// EVA consciousness system.
     #[must_use]
     pub fn eva() -> Self {

@@ -8,11 +8,32 @@ description = "Observability span types for the Light Architects platform — Tr
 keywords = ["observability", "tracing", "span", "traceparent", "ayin"]
 categories = ["development-tools::debugging", "data-structures"]
 
+[features]
+default = []
+## Enables [`batch`] module — batched span emission with bounded MPSC queue.
+## Adds tokio (sync + time + rt) and tracing dependencies.
+batch = ["dep:tokio", "dep:tracing"]
+## Exposes `metrics::reset_for_test` for integration test crates.
+## Do NOT enable in production builds.
+test-utils = []
+
 [dependencies]
 serde = { workspace = true }
 serde_json = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
 thiserror = { workspace = true }
+## Required by `batch` feature.
+tokio = { workspace = true, optional = true }
+## Required by `batch` feature (warn! on emit errors).
+tracing = { workspace = true, optional = true }
 
 [dev-dependencies]
+tokio = { workspace = true }
+tokio-test = "0.4"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "batch_bench"
+harness = false
+required-features = ["batch"]

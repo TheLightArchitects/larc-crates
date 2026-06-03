@@ -12,13 +12,23 @@ use crate::strand::StrandActivation;
 
 /// A complete trace record for a single unit of work.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct TraceSpan {
     /// Unique identifier for this span.
     pub id: Uuid,
     /// Parent span ID for nested traces.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub parent_id: Option<Uuid>,
     /// Session ID for cross-actor correlation.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub session_id: Option<String>,
+    /// 0-based turn index within the session.
+    ///
+    /// Each user→assistant exchange increments this counter. All spans
+    /// belonging to the same turn share the same `turn_index`. Absent on
+    /// legacy spans written before this field was introduced.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub turn_index: Option<u32>,
     /// Which actor produced this trace.
     ///
     /// Serializes as `"actor"` in new spans. Accepts `"sibling"` on
@@ -32,12 +42,15 @@ pub struct TraceSpan {
     /// Total wall-clock duration in milliseconds.
     pub duration_ms: u64,
     /// Decisions made during the operation.
+    #[serde(default)]
     pub decision_points: Vec<DecisionPoint>,
     /// Strand activations during the operation.
+    #[serde(default)]
     pub strand_activations: Vec<StrandActivation>,
     /// Final outcome.
     pub outcome: TraceOutcome,
     /// Arbitrary metadata (tool params, intermediate results, etc.).
+    #[serde(default)]
     pub metadata: serde_json::Value,
 }
 
@@ -66,6 +79,7 @@ pub struct TraceContext {
     id: Uuid,
     parent_id: Option<Uuid>,
     session_id: Option<String>,
+    turn_index: Option<u32>,
     actor: Actor,
     action: String,
     start: DateTime<Utc>,
@@ -83,6 +97,7 @@ impl TraceContext {
             id: Uuid::new_v4(),
             parent_id: None,
             session_id: None,
+            turn_index: None,
             actor,
             action: action.to_owned(),
             start: Utc::now(),
@@ -91,6 +106,22 @@ impl TraceContext {
             outcome: None,
             metadata: serde_json::Value::Null,
         }
+    }
+
+    /// Override the auto-generated span UUID.
+    ///
+    /// Useful when the caller pre-allocates an ID to set up parent references
+    /// before the span is finished (e.g. pipeline orchestration).
+    #[must_use]
+    pub fn with_id(mut self, id: Uuid) -> Self {
+        self.id = id;
+        self
+    }
+
+    /// Return the UUID this span will be assigned when [`finish`](Self::finish) is called.
+    #[must_use]
+    pub fn span_id(&self) -> Uuid {
+        self.id
     }
 
     /// Set a parent span for nesting.
@@ -104,6 +135,13 @@ impl TraceContext {
     #[must_use]
     pub fn session_id(mut self, id: &str) -> Self {
         self.session_id = Some(id.to_owned());
+        self
+    }
+
+    /// Set the 0-based turn index within the session.
+    #[must_use]
+    pub fn turn_index(mut self, index: u32) -> Self {
+        self.turn_index = Some(index);
         self
     }
 
@@ -198,15 +236,19 @@ impl TraceContext {
         })?;
 
         let now = Utc::now();
-        let duration_ms = now
-            .signed_duration_since(self.start)
-            .num_milliseconds()
-            .unsigned_abs();
+        let delta = now.signed_duration_since(self.start);
+        // Clock regression produces 0 rather than a bogus positive value.
+        let duration_ms = if delta.num_milliseconds() < 0 {
+            0
+        } else {
+            delta.num_milliseconds() as u64
+        };
 
         Ok(TraceSpan {
             id: self.id,
             parent_id: self.parent_id,
             session_id: self.session_id,
+            turn_index: self.turn_index,
             actor: self.actor,
             action: self.action,
             timestamp: self.start,
@@ -229,6 +271,7 @@ mod tests {
             id: Uuid::new_v4(),
             parent_id: Some(Uuid::new_v4()),
             session_id: Some("sess-abc".into()),
+            turn_index: Some(2),
             actor: Actor::eva(),
             action: "speak".into(),
             timestamp: Utc::now(),
@@ -329,6 +372,74 @@ mod tests {
     fn weight_out_of_range() {
         let result = TraceContext::new(Actor::eva(), "speak").strand("test", -0.1);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn turn_index_roundtrip() {
+        let span = TraceContext::new(Actor::claude(), "user.message")
+            .session_id("sess-xyz")
+            .turn_index(3)
+            .outcome(TraceOutcome::Continue)
+            .finish()
+            .expect("valid span");
+
+        assert_eq!(span.turn_index, Some(3));
+
+        // Serialize and verify field present in JSON.
+        let json = serde_json::to_string(&span).expect("serialize");
+        assert!(json.contains("\"turn_index\":3"));
+
+        let back: TraceSpan = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(back.turn_index, Some(3));
+    }
+
+    #[test]
+    fn turn_index_absent_on_legacy_spans() {
+        // Old JSON without turn_index must deserialize with None.
+        let old_json = r#"{
+            "id": "00000000-0000-0000-0000-000000000002",
+            "parent_id": null,
+            "session_id": "sess-old",
+            "actor": "claude",
+            "action": "user.message",
+            "timestamp": "2026-01-01T00:00:00Z",
+            "duration_ms": 0,
+            "decision_points": [],
+            "strand_activations": [],
+            "outcome": {"type": "Continue"},
+            "metadata": null
+        }"#;
+        let span: TraceSpan = serde_json::from_str(old_json).expect("deserialize legacy");
+        assert_eq!(span.turn_index, None);
+    }
+
+    #[test]
+    fn span_hierarchy_impl() {
+        use crate::hierarchy::SpanHierarchy;
+        use uuid::Uuid;
+
+        let parent_id = Uuid::new_v4();
+        let span = TraceContext::new(Actor::new("copilot"), "tool.Bash")
+            .session_id("sess-h")
+            .turn_index(1)
+            .parent(parent_id)
+            .outcome(TraceOutcome::Continue)
+            .finish()
+            .expect("valid span");
+
+        assert_eq!(span.session_id(), Some("sess-h"));
+        assert_eq!(span.turn_index(), Some(1));
+        assert_eq!(span.parent_id(), Some(parent_id));
+        assert!(!span.is_turn_root());
+
+        // A root span (no parent) reports is_turn_root = true.
+        let root = TraceContext::new(Actor::new("user"), "user.message")
+            .session_id("sess-h")
+            .turn_index(1)
+            .outcome(TraceOutcome::Continue)
+            .finish()
+            .expect("valid root");
+        assert!(root.is_turn_root());
     }
 
     #[test]

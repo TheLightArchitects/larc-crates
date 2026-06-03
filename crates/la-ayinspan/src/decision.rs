@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// A decision made during a traced operation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct DecisionPoint {
     /// Human-readable name of the decision (e.g. "route_to_hero").
     pub name: String,

@@ -2,6 +2,7 @@
 
 /// All errors that can occur within the trace engine.
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum TraceError {
     /// Failed to serialize or deserialize trace data.
     #[error("serialization error: {0}")]

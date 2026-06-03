@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// Records which personality strand was activated and with what weight.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct StrandActivation {
     /// The strand name (e.g. "analytical", "candid").
     pub strand: String,

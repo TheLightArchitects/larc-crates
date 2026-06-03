@@ -2,6 +2,8 @@
 
 use uuid::Uuid;
 
+use crate::span::TraceSpan;
+
 /// Trait for querying span hierarchy context.
 ///
 /// Consumers implement this trait to provide turn-tracking state
@@ -18,5 +20,26 @@ pub trait SpanHierarchy {
     fn parent_id(&self) -> Option<Uuid>;
 
     /// Whether this span is the root of a turn.
+    ///
+    /// A span is a turn root when it has no parent — it anchors the turn
+    /// and all tool-call children share its `id` as their `parent_id`.
     fn is_turn_root(&self) -> bool;
+}
+
+impl SpanHierarchy for TraceSpan {
+    fn session_id(&self) -> Option<&str> {
+        self.session_id.as_deref()
+    }
+
+    fn turn_index(&self) -> Option<u32> {
+        self.turn_index
+    }
+
+    fn parent_id(&self) -> Option<Uuid> {
+        self.parent_id
+    }
+
+    fn is_turn_root(&self) -> bool {
+        self.parent_id.is_none()
+    }
 }

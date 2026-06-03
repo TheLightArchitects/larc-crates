@@ -31,15 +31,34 @@ mod semconv;
 mod span;
 mod strand;
 
+pub mod emit;
+pub mod observe;
+pub mod turn;
+
+/// Atomic counters for batch emission observability.
+///
+/// Available unconditionally — reads are always valid even when the `batch`
+/// feature is disabled (counters will simply remain at zero).
+pub mod metrics;
+
+/// Batched span emission — requires the `batch` feature.
+#[cfg(feature = "batch")]
+pub mod batch;
+
 pub use actor::Actor;
 pub use decision::DecisionPoint;
 pub use error::TraceError;
 pub use hierarchy::SpanHierarchy;
 pub use outcome::TraceOutcome;
-pub use propagation::PropagationContext;
+pub use propagation::{PropagationContext, SESSION_PROPAGATION_KEY, TURN_INDEX_KEY};
 pub use semconv::lasdlc;
 pub use span::{TraceContext, TraceSpan};
 pub use strand::StrandActivation;
+
+// Flat re-exports for the most-used turn/emit/observe types.
+pub use emit::{NullSpanEmitter, SpanEmit};
+pub use observe::{NullSpanObserver, SpanObserve};
+pub use turn::{TurnContext, TurnTracker, TurnTracking};
 
 /// Backward-compatible alias: `Sibling` is now [`Actor`].
 pub type Sibling = Actor;
