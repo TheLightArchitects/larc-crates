@@ -1,38 +1,68 @@
 # la-crates
 
-Public Rust crates from [The Light Architects](https://github.com/TheLightArchitect).
-
-## Crates
-
-| Crate | Description | Feature Gates |
-|-------|-------------|---------------|
-| [`la-soulstrand`](./crates/la-soulstrand/) | Knowledge graph + retrieval library (96.2% Recall@5) | `sqlite` (default), `helix` (Neo4j) |
-| [`la-benchmark`](./crates/la-benchmark/) | Domain-agnostic performance benchmark framework | `longmemeval` |
-| [`la-mcp`](./crates/la-mcp/) | MCP server framework with multi-transport and squad routing | `stdio` (default), `http`, `websocket`, `lightsquad` |
-| [`la-ayinspan`](./crates/la-ayinspan/) | Observability span types — TraceSpan, Actor, W3C traceparent | None (zero runtime deps) |
-
-## Quick start
-
-```bash
-# Tier 1: SQLite only (no Neo4j needed)
-cargo add la-soulstrand
-
-# Tier 2: Full Neo4j + 4-signal RRF
-cargo add la-soulstrand --features helix
-
-# Benchmark framework with LongMemEval
-cargo add la-benchmark --features longmemeval
-
-# MCP server with all transports
-cargo add la-mcp --features stdio,http,websocket
-
-# Observability span types (no tokio, no axum)
-cargo add la-ayinspan
-```
+Public facade crates from [The Light Architects](https://github.com/TheLightArchitect).
 
 ## Architecture
 
-All public crates follow the **self-contained** pattern (Option 1): source is public, moat is benchmark result + ecosystem, not hidden code. The private `lightarchitects` SDK holds the secret sauce and is consumed via git dependency.
+All public crates follow the **facade pattern**: traits and types only, no implementations. The private `lightarchitects-sdk` holds the hidden business logic (the moat). Each crate has one clear purpose:
+
+```text
+la-soulstrand     ← swappable backends (HelixBackend + data types)
+la-benchmark       ← benchmark trait + metrics types
+la-gateway         ← plug adapter (how you connect to the ecosystem)
+la-ayinspan        ← observability span types (zero deps)
+```
+
+```text
+┌──────────────────────────────────────────────────────────┐
+│                   PUBLIC CRATES (facade)                 │
+│  la-soulstrand  la-benchmark  la-gateway  la-ayinspan   │
+│       traits + types only, no implementations            │
+└──────────────────────┬───────────────────────────────────┘
+                       │ implements
+┌──────────────────────▼───────────────────────────────────┐
+│              lightarchitects-sdk (private)                │
+│          4-signal RRF · adaptive weights · personality   │
+│              MCP transport · sibling dispatch             │
+└──────────────────────────────────────────────────────────┘
+```
+
+## Crates
+
+| Crate | Purpose | Feature Gates |
+|-------|---------|---------------|
+| [`la-soulstrand`](./crates/la-soulstrand/) | Knowledge graph backend traits + data types | `embedding`, `graph`, `promotion`, `helix` |
+| [`la-benchmark`](./crates/la-benchmark/) | Benchmark trait + metrics types | `longmemeval` |
+| [`la-gateway`](./crates/la-gateway/) | Gateway interface — transport, MCP handlers, protocol types | `mcp`, `squad`, `ayin` |
+| [`la-ayinspan`](./crates/la-ayinspan/) | Observability span types — TraceSpan, Actor, W3C traceparent | (none) |
+
+## Key design decisions
+
+- **la-gateway** is the plug adapter — Transport, SiblingHandler, Config, JSON-RPC types. Typed sibling clients (SoulClient, CorsoClient) live in the SDK, not here.
+- **la-soulstrand** is the swappable backend crate — `HelixBackend` is genuinely implementable by third parties. The other sibling traits aren't.
+- **HandlerRegistry** lives in the SDK, not la-gateway. The facade only defines `SiblingHandler` (the trait you implement).
+- **One owner per type** — SiblingId lives in la-gateway (the canonical source), re-exported by the SDK.
+- **Config** describes gateway connection (endpoint, auth, timeout), not binary spawning.
+
+## Usage
+
+```toml
+[dependencies]
+# SOUL knowledge graph traits
+la-soulstrand = { git = "...", features = ["helix"] }
+
+# Benchmark traits
+la-benchmark = { git = "...", features = ["longmemeval"] }
+
+# Gateway interface (how you plug in)
+la-gateway = { git = "...", features = ["mcp", "squad"] }
+
+# Observability span types (zero deps)
+la-ayinspan = { git = "..." }
+
+# Production implementation (the moat)
+lightarchitects = { git = "...", features = ["soul"] }
+```
 
 ## License
 

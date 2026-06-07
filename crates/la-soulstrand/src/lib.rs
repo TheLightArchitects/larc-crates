@@ -1,50 +1,85 @@
 //! # la-soulstrand
 //!
-//! Knowledge graph + retrieval library with 4-signal RRF.
+//! Knowledge graph type vocabulary and backend traits for the Light Architects
+//! SOUL engine.
 //!
-//! Tier 1 (default): SQLite + BM25/FTS5 — no Neo4j needed.
-//! Tier 2 (feature `helix`): Neo4j graph backend with 4-signal RRF retrieval.
+//! ## Default (no features) — zero async overhead
 //!
-//! ## Quick start
+//! Core graph types and error enums. Suitable for data-model-only consumers.
 //!
-//! ```no_run
-//! use la_soulstrand::SoulClient;
+//! | Tier | Types | Async? |
+//! |------|-------|--------|
+//! | **Data** | [`Step`], [`Helix`], [`Strand`], [`HelixLink`], [`SharedExperience`] | No |
+//! | **Model** | [`HelixOrderingMode`], [`Tier`], [`SoulstrandError`] | No |
 //!
-//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! let client = SoulClient::builder().connect().await?;
-//! let results = client.retrieve("what is consciousness?", 5).await?;
-//! for result in &results {
-//!     println!("{}: {:.3}", result.id(), result.score());
-//! }
-//! # Ok(())
-//! # }
-//! ```
+//! ## Features — three independent leaf traits + one orchestration layer
+//!
+//! Each leaf trait is independently gated so consumers can swap one component
+//! without pulling in the rest.
+//!
+//! | Feature | Exports | Typical backend |
+//! |---------|---------|-----------------|
+//! | `embedding` | [`EmbeddingBackend`] | fastembed, OpenAI, Ollama |
+//! | `graph` | [`GraphBackend`] | Neo4j, Memgraph, in-memory |
+//! | `promotion` | [`PromotionBackend`] | custom consolidator pipeline |
+//! | `helix` | [`HelixBackend`], [`SoulClient`], retrieval types | implies all three above |
+//! | `embedding-cache` | [`CachedEmbeddingProvider`] | wraps any `EmbeddingBackend` with moka TTL cache; implies `embedding` |
+//!
+//! The SDK enables `la-soulstrand/helix` and implements `HelixBackend` on
+//! `HelixStore`. External users implement `HelixBackend` for their own backend.
 
-// Core types — always available
-mod types;
+// ── Always-available: data types + model types (zero async) ─────────────────
+
 mod error;
+mod ordering;
+mod tier;
+mod types;
+
+pub use error::SoulstrandError;
+pub use ordering::HelixOrderingMode;
+pub use tier::Tier;
+pub use types::{Helix, HelixLink, SharedExperience, Step, Strand};
+
+// ── Feature `embedding` ───────────────────────────────────────────────────────
+
+#[cfg(feature = "embedding")]
+mod embedding;
+#[cfg(feature = "embedding")]
+pub use embedding::EmbeddingBackend;
+
+// ── Feature `graph` ───────────────────────────────────────────────────────────
+
+#[cfg(feature = "graph")]
+mod graph;
+#[cfg(feature = "graph")]
+pub use graph::GraphBackend;
+
+// ── Feature `promotion` ──────────────────────────────────────────────────────
+
+#[cfg(feature = "promotion")]
+mod promotion;
+#[cfg(feature = "promotion")]
+pub use promotion::PromotionBackend;
+
+// ── Feature `embedding-cache` (implies embedding) ────────────────────────────
+
+#[cfg(feature = "embedding-cache")]
+mod cached;
+#[cfg(feature = "embedding-cache")]
+pub use cached::CachedEmbeddingProvider;
+
+// ── Feature `helix` (implies embedding + graph + promotion) ──────────────────
+
+#[cfg(feature = "helix")]
 mod client;
-mod builder;
-
-pub use types::*;
-pub use error::*;
-pub use client::SoulClient;
-pub use builder::SoulClientBuilder;
-
-// Tier 1: SQLite backend (default)
-#[cfg(feature = "sqlite")]
-mod sqlite;
-
-#[cfg(feature = "sqlite")]
-pub use sqlite::SqliteBackend;
-
-// Tier 2: Neo4j + 4-signal RRF
 #[cfg(feature = "helix")]
 mod helix;
+#[cfg(feature = "helix")]
+mod retrieval;
 
 #[cfg(feature = "helix")]
-pub use helix::{
-    HelixBackend,
-    HybridRetriever,
-    SignalWeights,
-};
+pub use client::SoulClient;
+#[cfg(feature = "helix")]
+pub use helix::{HelixBackend, select_mode};
+#[cfg(feature = "helix")]
+pub use retrieval::{RetrievalMode, RetrievalResult, SignalWeights};

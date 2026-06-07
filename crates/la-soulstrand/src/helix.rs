@@ -1,84 +1,134 @@
-//! Neo4j + 4-signal RRF backend (feature gate `helix`).
-//!
-//! Combines BM25 keyword, semantic HNSW, structural Node2Vec,
-//! and graph traversal signals via Reciprocal Rank Fusion.
+//! `HelixBackend` — orchestration layer over the three sub-traits.
 
-use crate::{SoulstrandError, RetrievalResult};
+use async_trait::async_trait;
 
-/// Adaptive retrieval mode (auto-selected by step count).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RetrievalMode {
-    /// < 25 steps: keyword-dominated (0.65 / 0.25 / 0.03 / 0.07)
-    KeywordDominated,
-    /// 25-99 steps: balanced (0.25 / 0.35 / 0.10 / 0.30)
-    Balanced,
-    /// >= 100 steps: graph-weighted (0.15 / 0.30 / 0.10 / 0.45)
-    GraphWeighted,
-}
+use crate::{
+    EmbeddingBackend, GraphBackend, Helix, HelixLink, PromotionBackend, RetrievalMode,
+    RetrievalResult, SignalWeights, SoulstrandError, Step,
+};
 
-/// Signal weights for 4-signal RRF.
-#[derive(Debug, Clone)]
-pub struct SignalWeights {
-    pub bm25: f64,
-    pub semantic: f64,
-    pub structural: f64,
-    pub graph: f64,
-}
-
-impl Default for SignalWeights {
-    fn default() -> Self {
-        Self::balanced()
+/// Select the adaptive retrieval mode based on corpus size.
+///
+/// | Step count | Mode |
+/// |---|---|
+/// | < 25 | [`KeywordDominated`](RetrievalMode::KeywordDominated) |
+/// | 25–99 | [`Balanced`](RetrievalMode::Balanced) |
+/// | ≥ 100 | [`GraphWeighted`](RetrievalMode::GraphWeighted) |
+#[must_use]
+pub fn select_mode(step_count: usize) -> RetrievalMode {
+    match step_count {
+        0..=24 => RetrievalMode::KeywordDominated,
+        25..=99 => RetrievalMode::Balanced,
+        _ => RetrievalMode::GraphWeighted,
     }
 }
 
-impl SignalWeights {
-    pub fn keyword_dominated() -> Self {
-        Self { bm25: 0.65, semantic: 0.25, structural: 0.03, graph: 0.07 }
-    }
+/// Orchestration layer over [`EmbeddingBackend`], [`GraphBackend`], and
+/// [`PromotionBackend`].
+///
+/// `HelixBackend` adds the helix-specific write path (upsert/delete steps and
+/// helix container nodes, link steps) and the 4-signal convex-combination ranked retrieval
+/// that fuses the embedding and graph signals. Graph traversal, raw embedding,
+/// and promotion are inherited from the three supertraits.
+///
+/// # Implementing
+///
+/// Implement all three supertraits on your struct, then implement the five
+/// helix-specific methods below. The `retrieve_adaptive` default
+/// implementation comes for free.
+///
+/// ```rust,ignore
+/// use la_soulstrand::{
+///     EmbeddingBackend, GraphBackend, HelixBackend, PromotionBackend,
+///     Helix, HelixLink, RetrievalResult, SignalWeights, SoulstrandError, Step, Tier,
+/// };
+///
+/// struct MyBackend;
+///
+/// #[async_trait::async_trait]
+/// impl EmbeddingBackend for MyBackend {
+///     async fn embed(&self, text: &str) -> Result<Vec<f32>, SoulstrandError> { todo!() }
+///     fn dimensions(&self) -> usize { 768 }
+/// }
+///
+/// #[async_trait::async_trait]
+/// impl GraphBackend for MyBackend {
+///     async fn upsert_node(&self, id: &str, labels: &[&str], props: serde_json::Value)
+///         -> Result<(), SoulstrandError> { todo!() }
+///     async fn upsert_edge(&self, from: &str, to: &str, rel: &str, props: serde_json::Value)
+///         -> Result<(), SoulstrandError> { todo!() }
+///     async fn delete_node(&self, id: &str) -> Result<(), SoulstrandError> { todo!() }
+///     async fn traverse(&self, from: &str, depth: usize) -> Result<Vec<String>, SoulstrandError> { todo!() }
+/// }
+///
+/// #[async_trait::async_trait]
+/// impl PromotionBackend for MyBackend {
+///     async fn promote(&self, steps: Vec<Step>) -> Result<Vec<Step>, SoulstrandError> { todo!() }
+///     async fn tier_step(&self, id: &str, tier: Tier) -> Result<(), SoulstrandError> { todo!() }
+/// }
+///
+/// #[async_trait::async_trait]
+/// impl HelixBackend for MyBackend {
+///     async fn upsert_step(&self, step: Step) -> Result<(), SoulstrandError> { todo!() }
+///     async fn delete_step(&self, id: &str) -> Result<(), SoulstrandError> { todo!() }
+///     async fn upsert_helix(&self, helix: Helix) -> Result<(), SoulstrandError> { todo!() }
+///     async fn link_steps(&self, link: HelixLink) -> Result<(), SoulstrandError> { todo!() }
+///     async fn get_step(&self, id: &str) -> Result<Option<Step>, SoulstrandError> { todo!() }
+///     async fn step_count(&self, helix_id: &str) -> Result<usize, SoulstrandError> { todo!() }
+///     async fn retrieve(&self, query: &str, k: usize, weights: &SignalWeights)
+///         -> Result<Vec<RetrievalResult>, SoulstrandError> { todo!() }
+/// }
+/// ```
+#[async_trait]
+pub trait HelixBackend: EmbeddingBackend + GraphBackend + PromotionBackend {
+    // ── Write path ────────────────────────────────────────────────────────────
 
-    pub fn balanced() -> Self {
-        Self { bm25: 0.25, semantic: 0.35, structural: 0.10, graph: 0.30 }
-    }
+    /// Create or update a helix step (content atom).
+    async fn upsert_step(&self, step: Step) -> Result<(), SoulstrandError>;
 
-    pub fn graph_weighted() -> Self {
-        Self { bm25: 0.15, semantic: 0.30, structural: 0.10, graph: 0.45 }
-    }
-}
+    /// Delete a step and its incident graph edges.
+    async fn delete_step(&self, id: &str) -> Result<(), SoulstrandError>;
 
-/// Neo4j-backed knowledge graph storage with 4-signal RRF.
-pub struct HelixBackend {
-    _inner: (),
-}
+    /// Create or update a helix container node.
+    async fn upsert_helix(&self, helix: Helix) -> Result<(), SoulstrandError>;
 
-impl HelixBackend {
-    /// Connect to a Neo4j database.
-    pub async fn connect(_uri: &str, _user: &str, _password: &str) -> Result<Self, SoulstrandError> {
-        todo!("implement Neo4j backend")
-    }
+    /// Create a typed, weighted edge between two steps.
+    async fn link_steps(&self, link: HelixLink) -> Result<(), SoulstrandError>;
 
-    /// Retrieve steps using 4-signal RRF.
-    pub async fn retrieve_hybrid(
+    // ── Read path ─────────────────────────────────────────────────────────────
+
+    /// Point lookup — retrieve a single step by ID.
+    async fn get_step(&self, id: &str) -> Result<Option<Step>, SoulstrandError>;
+
+    /// Count steps in a helix — drives [`select_mode`] and adaptive retrieval.
+    async fn step_count(&self, helix_id: &str) -> Result<usize, SoulstrandError>;
+
+    /// 4-signal convex-combination ranked retrieval — return the top-`k` steps for `query`.
+    ///
+    /// Implementations fuse BM25, semantic embedding, graph traversal, and
+    /// Node2Vec signals using `weights`. Use [`SignalWeights::for_mode`] with
+    /// [`select_mode`] to auto-select appropriate weights.
+    async fn retrieve(
         &self,
-        _query: &str,
-        _k: usize,
-        _weights: &SignalWeights,
+        query: &str,
+        k: usize,
+        weights: &SignalWeights,
+    ) -> Result<Vec<RetrievalResult>, SoulstrandError>;
+
+    // ── Default helpers ───────────────────────────────────────────────────────
+
+    /// Ranked retrieval with auto-selected signal weights.
+    ///
+    /// Calls [`step_count`](Self::step_count) → [`select_mode`] →
+    /// [`SignalWeights::for_mode`] → [`retrieve`](Self::retrieve).
+    async fn retrieve_adaptive(
+        &self,
+        helix_id: &str,
+        query: &str,
+        k: usize,
     ) -> Result<Vec<RetrievalResult>, SoulstrandError> {
-        todo!("implement 4-signal RRF")
-    }
-}
-
-/// Hybrid retriever that combines SQLite BM25 with Neo4j 4-signal RRF.
-pub struct HybridRetriever {
-    _inner: (),
-}
-
-impl HybridRetriever {
-    /// Select retrieval mode based on step count.
-    pub fn select_mode(step_count: usize) -> RetrievalMode {
-        match step_count {
-            0..=24 => RetrievalMode::KeywordDominated,
-            25..=99 => RetrievalMode::Balanced,
-            _ => RetrievalMode::GraphWeighted,
-        }
+        let count = self.step_count(helix_id).await?;
+        let weights = SignalWeights::for_mode(select_mode(count));
+        self.retrieve(query, k, &weights).await
     }
 }

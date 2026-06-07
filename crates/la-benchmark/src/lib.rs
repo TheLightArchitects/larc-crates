@@ -1,54 +1,55 @@
 //! # la-benchmark
 //!
-//! Domain-agnostic performance benchmark framework for knowledge retrieval systems.
+//! Domain-agnostic performance benchmark trait definitions for knowledge retrieval systems.
 //!
-//! Provides the `BenchmarkSuite` trait and a runner that any system can implement.
-//! Feature-gated benchmark suites (e.g., `longmemeval`) add dataset-specific traits.
+//! This crate defines the **interfaces** (traits, types, errors) that the private
+//! `lightarchitects-sdk` implements. Users can implement these traits themselves
+//! or consume the SDK via git dependency.
 //!
 //! ## Quick start
 //!
-//! ```no_run
-//! use la_benchmark::{BenchmarkSuite, BenchmarkRunner, BenchmarkReport};
+//! ```rust
+//! use la_benchmark::{BenchmarkSuite, BenchmarkError, BenchmarkReport};
 //!
 //! struct MyRetriever;
 //!
 //! impl BenchmarkSuite for MyRetriever {
 //!     fn name(&self) -> &str { "my-retriever" }
 //!
-//!     fn run(&self) -> Result<BenchmarkReport, la_benchmark::BenchmarkError> {
-//!         // Run your benchmarks here
+//!     fn run(&self) -> Result<BenchmarkReport, BenchmarkError> {
+//!         // Implement your benchmark logic here
 //!         todo!()
 //!     }
-//!
-//!     fn report(&self) -> BenchmarkReport { todo!() }
 //! }
+//! ```
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let suite = MyRetriever;
-//! let report = BenchmarkRunner::new().run(&suite)?;
-//! println!("{}", report.summary());
-//! # Ok(())
-//! # }
+//! ## Implementations
+//!
+//! The concrete runner and dataset implementations live in the `lightarchitects-sdk` crate.
+//! To use the production runner:
+//!
+//! ```toml
+//! [dependencies]
+//! la-benchmark = { git = "https://github.com/TheLightArchitect/lightarchitects-sdk" }
+//! lightarchitects = { git = "https://github.com/TheLightArchitect/lightarchitects-sdk", features = ["benchmark"] }
 //! ```
 
 mod error;
 mod report;
-mod runner;
 
 pub use error::BenchmarkError;
 pub use report::{BenchmarkReport, Metric, MetricValue};
-pub use runner::BenchmarkRunner;
 
 /// Core trait that all benchmark suites implement.
+///
+/// Implement this trait to define a benchmark suite for your retrieval system.
+/// The production runner lives in `lightarchitects-sdk`.
 pub trait BenchmarkSuite {
     /// Human-readable name for this benchmark suite.
     fn name(&self) -> &str;
 
     /// Execute the benchmark and return a report.
     fn run(&self) -> Result<BenchmarkReport, BenchmarkError>;
-
-    /// Retrieve the last completed report without re-running.
-    fn report(&self) -> BenchmarkReport;
 }
 
 // Feature-gated: LongMemEval benchmark
@@ -56,4 +57,6 @@ pub trait BenchmarkSuite {
 mod longmemeval;
 
 #[cfg(feature = "longmemeval")]
-pub use longmemeval::{Document, LongMemEval, LongMemEvalDataset, RetrievalResult};
+pub use longmemeval::{
+    Document, LongMemEval, LongMemEvalDataset, LongMemEvalQuestion, RetrievalResult,
+};

@@ -10,17 +10,13 @@ categories = ["development-tools::testing", "science"]
 
 [features]
 default = []
-longmemeval = ["dep:csv", "dep:flate2"]
+# LongMemEval dataset loading (CSV support planned for future release).
+longmemeval = []
 
 [dependencies]
-serde = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
-tracing = { workspace = true }
-
-# LongMemEval dataset
-csv = { version = "1", optional = true }
-flate2 = { version = "1", optional = true }
 
 [dev-dependencies]
-tokio = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt"] }

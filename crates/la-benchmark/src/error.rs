@@ -2,6 +2,7 @@ use thiserror::Error;
 
 /// Errors for la-benchmark.
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum BenchmarkError {
     #[error("benchmark execution failed: {0}")]
     ExecutionFailed(String),

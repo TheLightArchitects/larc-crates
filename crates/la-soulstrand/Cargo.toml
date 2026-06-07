@@ -4,27 +4,33 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Knowledge graph + retrieval library with 4-signal RRF — 96.2% Recall@5 on LongMemEval"
-keywords = ["knowledge-graph", "retrieval", "rrf", "neo4j", "sqlite"]
+description = "Knowledge graph + retrieval trait definitions — facade crate for the Light Architects SOUL engine"
+keywords = ["knowledge-graph", "retrieval", "neo4j", "sqlite", "embedding"]
 categories = ["database", "data-structures", "science"]
 
 [features]
-default = ["sqlite"]
-sqlite = ["rusqlite/bundled", "rusqlite/vtab"]
-helix = ["neo4rs", "fastembed"]
+default = []
+# Swap the embedding model — fastembed, OpenAI, Ollama, etc.
+embedding = ["dep:async-trait"]
+# Swap the graph store — Neo4j, Memgraph, in-memory, etc.
+graph = ["dep:async-trait"]
+# Swap the consolidation pipeline — custom promotion + tier management.
+promotion = ["dep:async-trait"]
+# Full orchestration layer: HelixBackend + SoulClient + convex-combination retrieval types.
+# Implies all three sub-traits.
+helix = ["embedding", "graph", "promotion"]
+# Moka-backed TTL cache wrapping any EmbeddingBackend.
+# Adds CachedEmbeddingProvider — pull in when you want transparent embedding caching.
+# Implies `embedding`.
+embedding-cache = ["embedding", "dep:moka", "dep:sha2"]
 
 [dependencies]
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
-tracing = { workspace = true }
-
-# Tier 1: SQLite
-rusqlite = { version = "0.34", optional = true }
-
-# Tier 2: Neo4j + embeddings
-neo4rs = { version = "0.8", optional = true }
-fastembed = { version = "4", optional = true }
+async-trait = { version = "0.1", optional = true }
+moka = { version = "0.12", features = ["future"], optional = true }
+sha2 = { version = "0.10", optional = true }
 
 [dev-dependencies]
 tokio = { workspace = true }

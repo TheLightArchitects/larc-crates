@@ -3,8 +3,10 @@ resolver = "2"
 members = [
     "crates/la-soulstrand",
     "crates/la-benchmark",
-    "crates/la-mcp",
+    "crates/la-gateway",
     "crates/la-ayinspan",
+    "crates/la-lightsquad",
+    "crates/la-loops",
 ]
 
 [workspace.package]
@@ -18,8 +20,10 @@ rust-version = "1.85"
 # Internal
 la-soulstrand = { path = "crates/la-soulstrand" }
 la-benchmark = { path = "crates/la-benchmark" }
-la-mcp = { path = "crates/la-mcp" }
+la-gateway = { path = "crates/la-gateway" }
 la-ayinspan = { path = "crates/la-ayinspan" }
+la-lightsquad = { path = "crates/la-lightsquad" }
+la-loops = { path = "crates/la-loops" }
 
 # Shared
 serde = { version = "1", features = ["derive"] }
