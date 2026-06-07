@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use crate::{
     EmbeddingBackend, GraphBackend, Helix, HelixLink, PromotionBackend, RetrievalMode,
-    RetrievalResult, SignalWeights, SoulstrandError, Step,
+    RetrievalResult, SignalWeights, SoulvaultError, Step,
 };
 
 /// Select the adaptive retrieval mode based on corpus size.
@@ -38,45 +38,45 @@ pub fn select_mode(step_count: usize) -> RetrievalMode {
 /// implementation comes for free.
 ///
 /// ```rust,ignore
-/// use la_soulstrand::{
+/// use la_soulvault::{
 ///     EmbeddingBackend, GraphBackend, HelixBackend, PromotionBackend,
-///     Helix, HelixLink, RetrievalResult, SignalWeights, SoulstrandError, Step, Tier,
+///     Helix, HelixLink, RetrievalResult, SignalWeights, SoulvaultError, Step, Tier,
 /// };
 ///
 /// struct MyBackend;
 ///
 /// #[async_trait::async_trait]
 /// impl EmbeddingBackend for MyBackend {
-///     async fn embed(&self, text: &str) -> Result<Vec<f32>, SoulstrandError> { todo!() }
+///     async fn embed(&self, text: &str) -> Result<Vec<f32>, SoulvaultError> { todo!() }
 ///     fn dimensions(&self) -> usize { 768 }
 /// }
 ///
 /// #[async_trait::async_trait]
 /// impl GraphBackend for MyBackend {
 ///     async fn upsert_node(&self, id: &str, labels: &[&str], props: serde_json::Value)
-///         -> Result<(), SoulstrandError> { todo!() }
+///         -> Result<(), SoulvaultError> { todo!() }
 ///     async fn upsert_edge(&self, from: &str, to: &str, rel: &str, props: serde_json::Value)
-///         -> Result<(), SoulstrandError> { todo!() }
-///     async fn delete_node(&self, id: &str) -> Result<(), SoulstrandError> { todo!() }
-///     async fn traverse(&self, from: &str, depth: usize) -> Result<Vec<String>, SoulstrandError> { todo!() }
+///         -> Result<(), SoulvaultError> { todo!() }
+///     async fn delete_node(&self, id: &str) -> Result<(), SoulvaultError> { todo!() }
+///     async fn traverse(&self, from: &str, depth: usize) -> Result<Vec<String>, SoulvaultError> { todo!() }
 /// }
 ///
 /// #[async_trait::async_trait]
 /// impl PromotionBackend for MyBackend {
-///     async fn promote(&self, steps: Vec<Step>) -> Result<Vec<Step>, SoulstrandError> { todo!() }
-///     async fn tier_step(&self, id: &str, tier: Tier) -> Result<(), SoulstrandError> { todo!() }
+///     async fn promote(&self, steps: Vec<Step>) -> Result<Vec<Step>, SoulvaultError> { todo!() }
+///     async fn tier_step(&self, id: &str, tier: Tier) -> Result<(), SoulvaultError> { todo!() }
 /// }
 ///
 /// #[async_trait::async_trait]
 /// impl HelixBackend for MyBackend {
-///     async fn upsert_step(&self, step: Step) -> Result<(), SoulstrandError> { todo!() }
-///     async fn delete_step(&self, id: &str) -> Result<(), SoulstrandError> { todo!() }
-///     async fn upsert_helix(&self, helix: Helix) -> Result<(), SoulstrandError> { todo!() }
-///     async fn link_steps(&self, link: HelixLink) -> Result<(), SoulstrandError> { todo!() }
-///     async fn get_step(&self, id: &str) -> Result<Option<Step>, SoulstrandError> { todo!() }
-///     async fn step_count(&self, helix_id: &str) -> Result<usize, SoulstrandError> { todo!() }
+///     async fn upsert_step(&self, step: Step) -> Result<(), SoulvaultError> { todo!() }
+///     async fn delete_step(&self, id: &str) -> Result<(), SoulvaultError> { todo!() }
+///     async fn upsert_helix(&self, helix: Helix) -> Result<(), SoulvaultError> { todo!() }
+///     async fn link_steps(&self, link: HelixLink) -> Result<(), SoulvaultError> { todo!() }
+///     async fn get_step(&self, id: &str) -> Result<Option<Step>, SoulvaultError> { todo!() }
+///     async fn step_count(&self, helix_id: &str) -> Result<usize, SoulvaultError> { todo!() }
 ///     async fn retrieve(&self, query: &str, k: usize, weights: &SignalWeights)
-///         -> Result<Vec<RetrievalResult>, SoulstrandError> { todo!() }
+///         -> Result<Vec<RetrievalResult>, SoulvaultError> { todo!() }
 /// }
 /// ```
 #[async_trait]
@@ -84,24 +84,24 @@ pub trait HelixBackend: EmbeddingBackend + GraphBackend + PromotionBackend {
     // ── Write path ────────────────────────────────────────────────────────────
 
     /// Create or update a helix step (content atom).
-    async fn upsert_step(&self, step: Step) -> Result<(), SoulstrandError>;
+    async fn upsert_step(&self, step: Step) -> Result<(), SoulvaultError>;
 
     /// Delete a step and its incident graph edges.
-    async fn delete_step(&self, id: &str) -> Result<(), SoulstrandError>;
+    async fn delete_step(&self, id: &str) -> Result<(), SoulvaultError>;
 
     /// Create or update a helix container node.
-    async fn upsert_helix(&self, helix: Helix) -> Result<(), SoulstrandError>;
+    async fn upsert_helix(&self, helix: Helix) -> Result<(), SoulvaultError>;
 
     /// Create a typed, weighted edge between two steps.
-    async fn link_steps(&self, link: HelixLink) -> Result<(), SoulstrandError>;
+    async fn link_steps(&self, link: HelixLink) -> Result<(), SoulvaultError>;
 
     // ── Read path ─────────────────────────────────────────────────────────────
 
     /// Point lookup — retrieve a single step by ID.
-    async fn get_step(&self, id: &str) -> Result<Option<Step>, SoulstrandError>;
+    async fn get_step(&self, id: &str) -> Result<Option<Step>, SoulvaultError>;
 
     /// Count steps in a helix — drives [`select_mode`] and adaptive retrieval.
-    async fn step_count(&self, helix_id: &str) -> Result<usize, SoulstrandError>;
+    async fn step_count(&self, helix_id: &str) -> Result<usize, SoulvaultError>;
 
     /// 4-signal convex-combination ranked retrieval — return the top-`k` steps for `query`.
     ///
@@ -113,7 +113,7 @@ pub trait HelixBackend: EmbeddingBackend + GraphBackend + PromotionBackend {
         query: &str,
         k: usize,
         weights: &SignalWeights,
-    ) -> Result<Vec<RetrievalResult>, SoulstrandError>;
+    ) -> Result<Vec<RetrievalResult>, SoulvaultError>;
 
     // ── Default helpers ───────────────────────────────────────────────────────
 
@@ -126,7 +126,7 @@ pub trait HelixBackend: EmbeddingBackend + GraphBackend + PromotionBackend {
         helix_id: &str,
         query: &str,
         k: usize,
-    ) -> Result<Vec<RetrievalResult>, SoulstrandError> {
+    ) -> Result<Vec<RetrievalResult>, SoulvaultError> {
         let count = self.step_count(helix_id).await?;
         let weights = SignalWeights::for_mode(select_mode(count));
         self.retrieve(query, k, &weights).await

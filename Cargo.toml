@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/la-soulstrand",
+    "crates/la-soulvault",
     "crates/la-benchmark",
     "crates/la-gateway",
     "crates/la-ayinspan",
@@ -18,7 +18,7 @@ rust-version = "1.85"
 
 [workspace.dependencies]
 # Internal
-la-soulstrand = { path = "crates/la-soulstrand" }
+la-soulvault = { path = "crates/la-soulvault" }
 la-benchmark = { path = "crates/la-benchmark" }
 la-gateway = { path = "crates/la-gateway" }
 la-ayinspan = { path = "crates/la-ayinspan" }

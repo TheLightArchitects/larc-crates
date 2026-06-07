@@ -1,9 +1,9 @@
-//! Errors for la-soulstrand.
+//! Errors for la-soulvault.
 
 /// Errors for the SOUL knowledge graph.
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
-pub enum SoulstrandError {
+pub enum SoulvaultError {
     /// Connection to the backend failed.
     #[error("connection failed: {0}")]
     ConnectionFailed(String),

@@ -5,7 +5,7 @@
 //! requiring callers to carry the concrete backend type as a generic parameter.
 
 use crate::{
-    Helix, HelixBackend, HelixLink, RetrievalResult, SignalWeights, SoulstrandError, Step, Tier,
+    Helix, HelixBackend, HelixLink, RetrievalResult, SignalWeights, SoulvaultError, Step, Tier,
 };
 
 /// Owned, type-erased helix client.
@@ -45,34 +45,34 @@ impl SoulClient {
     // ── HelixBackend — write path ─────────────────────────────────────────────
 
     /// Create or update a step.
-    pub async fn upsert_step(&self, step: Step) -> Result<(), SoulstrandError> {
+    pub async fn upsert_step(&self, step: Step) -> Result<(), SoulvaultError> {
         self.inner.upsert_step(step).await
     }
 
     /// Delete a step and its incident edges.
-    pub async fn delete_step(&self, id: &str) -> Result<(), SoulstrandError> {
+    pub async fn delete_step(&self, id: &str) -> Result<(), SoulvaultError> {
         self.inner.delete_step(id).await
     }
 
     /// Create or update a helix container.
-    pub async fn upsert_helix(&self, helix: Helix) -> Result<(), SoulstrandError> {
+    pub async fn upsert_helix(&self, helix: Helix) -> Result<(), SoulvaultError> {
         self.inner.upsert_helix(helix).await
     }
 
     /// Create a typed, weighted edge between two steps.
-    pub async fn link_steps(&self, link: HelixLink) -> Result<(), SoulstrandError> {
+    pub async fn link_steps(&self, link: HelixLink) -> Result<(), SoulvaultError> {
         self.inner.link_steps(link).await
     }
 
     // ── HelixBackend — read path ──────────────────────────────────────────────
 
     /// Point lookup by step ID.
-    pub async fn get_step(&self, id: &str) -> Result<Option<Step>, SoulstrandError> {
+    pub async fn get_step(&self, id: &str) -> Result<Option<Step>, SoulvaultError> {
         self.inner.get_step(id).await
     }
 
     /// Number of steps in a helix.
-    pub async fn step_count(&self, helix_id: &str) -> Result<usize, SoulstrandError> {
+    pub async fn step_count(&self, helix_id: &str) -> Result<usize, SoulvaultError> {
         self.inner.step_count(helix_id).await
     }
 
@@ -82,7 +82,7 @@ impl SoulClient {
         query: &str,
         k: usize,
         weights: &SignalWeights,
-    ) -> Result<Vec<RetrievalResult>, SoulstrandError> {
+    ) -> Result<Vec<RetrievalResult>, SoulvaultError> {
         self.inner.retrieve(query, k, weights).await
     }
 
@@ -92,19 +92,19 @@ impl SoulClient {
         helix_id: &str,
         query: &str,
         k: usize,
-    ) -> Result<Vec<RetrievalResult>, SoulstrandError> {
+    ) -> Result<Vec<RetrievalResult>, SoulvaultError> {
         self.inner.retrieve_adaptive(helix_id, query, k).await
     }
 
     // ── EmbeddingBackend ──────────────────────────────────────────────────────
 
     /// Embed a single text string into a dense vector.
-    pub async fn embed(&self, text: &str) -> Result<Vec<f32>, SoulstrandError> {
+    pub async fn embed(&self, text: &str) -> Result<Vec<f32>, SoulvaultError> {
         self.inner.embed(text).await
     }
 
     /// Embed a batch of texts.
-    pub async fn embed_batch(&self, texts: &[&str]) -> Result<Vec<Vec<f32>>, SoulstrandError> {
+    pub async fn embed_batch(&self, texts: &[&str]) -> Result<Vec<Vec<f32>>, SoulvaultError> {
         self.inner.embed_batch(texts).await
     }
 
@@ -121,7 +121,7 @@ impl SoulClient {
         id: &str,
         labels: &[&str],
         props: serde_json::Value,
-    ) -> Result<(), SoulstrandError> {
+    ) -> Result<(), SoulvaultError> {
         self.inner.upsert_node(id, labels, props).await
     }
 
@@ -132,7 +132,7 @@ impl SoulClient {
         to_id: &str,
         rel_type: &str,
         props: serde_json::Value,
-    ) -> Result<(), SoulstrandError> {
+    ) -> Result<(), SoulvaultError> {
         self.inner
             .upsert_edge(from_id, to_id, rel_type, props)
             .await
@@ -143,29 +143,29 @@ impl SoulClient {
         &self,
         from_id: &str,
         depth: usize,
-    ) -> Result<Vec<String>, SoulstrandError> {
+    ) -> Result<Vec<String>, SoulvaultError> {
         self.inner.traverse(from_id, depth).await
     }
 
     /// Direct neighbours of a node (depth = 1).
-    pub async fn neighbors(&self, id: &str) -> Result<Vec<String>, SoulstrandError> {
+    pub async fn neighbors(&self, id: &str) -> Result<Vec<String>, SoulvaultError> {
         self.inner.neighbors(id).await
     }
 
     // ── PromotionBackend ──────────────────────────────────────────────────────
 
     /// Promote a batch of raw steps into enriched helix entries.
-    pub async fn promote(&self, steps: Vec<Step>) -> Result<Vec<Step>, SoulstrandError> {
+    pub async fn promote(&self, steps: Vec<Step>) -> Result<Vec<Step>, SoulvaultError> {
         self.inner.promote(steps).await
     }
 
     /// Move a step to a different lifecycle tier.
-    pub async fn tier_step(&self, id: &str, tier: Tier) -> Result<(), SoulstrandError> {
+    pub async fn tier_step(&self, id: &str, tier: Tier) -> Result<(), SoulvaultError> {
         self.inner.tier_step(id, tier).await
     }
 
     /// Deduplicate a batch of steps before promotion.
-    pub async fn deduplicate(&self, steps: Vec<Step>) -> Result<Vec<Step>, SoulstrandError> {
+    pub async fn deduplicate(&self, steps: Vec<Step>) -> Result<Vec<Step>, SoulvaultError> {
         self.inner.deduplicate(steps).await
     }
 }

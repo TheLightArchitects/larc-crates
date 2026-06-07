@@ -6,7 +6,7 @@
 use async_trait::async_trait;
 use std::fmt::Debug;
 
-use crate::SoulstrandError;
+use crate::SoulvaultError;
 
 /// Contract for a text embedding model.
 ///
@@ -16,17 +16,17 @@ use crate::SoulstrandError;
 /// # Example
 ///
 /// ```rust,ignore
-/// use la_soulstrand::{EmbeddingBackend, SoulstrandError};
+/// use la_soulvault::{EmbeddingBackend, SoulvaultError};
 ///
 /// struct OllamaEmbedder { model: String, base_url: String }
 ///
 /// #[async_trait::async_trait]
 /// impl EmbeddingBackend for OllamaEmbedder {
-///     async fn embed(&self, text: &str) -> Result<Vec<f32>, SoulstrandError> {
+///     async fn embed(&self, text: &str) -> Result<Vec<f32>, SoulvaultError> {
 ///         // POST /api/embeddings
 ///         todo!()
 ///     }
-///     async fn embed_batch(&self, texts: &[&str]) -> Result<Vec<Vec<f32>>, SoulstrandError> {
+///     async fn embed_batch(&self, texts: &[&str]) -> Result<Vec<Vec<f32>>, SoulvaultError> {
 ///         let mut out = Vec::with_capacity(texts.len());
 ///         for t in texts { out.push(self.embed(t).await?); }
 ///         Ok(out)
@@ -37,13 +37,13 @@ use crate::SoulstrandError;
 #[async_trait]
 pub trait EmbeddingBackend: Debug + Send + Sync {
     /// Embed a single text string into a dense vector.
-    async fn embed(&self, text: &str) -> Result<Vec<f32>, SoulstrandError>;
+    async fn embed(&self, text: &str) -> Result<Vec<f32>, SoulvaultError>;
 
     /// Embed a batch of texts — implementations should parallelise internally.
     ///
     /// The default implementation calls [`embed`](Self::embed) sequentially;
     /// override for performance.
-    async fn embed_batch(&self, texts: &[&str]) -> Result<Vec<Vec<f32>>, SoulstrandError> {
+    async fn embed_batch(&self, texts: &[&str]) -> Result<Vec<Vec<f32>>, SoulvaultError> {
         let mut out = Vec::with_capacity(texts.len());
         for text in texts {
             out.push(self.embed(text).await?);

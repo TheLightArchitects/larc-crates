@@ -6,7 +6,7 @@
 use async_trait::async_trait;
 use std::fmt::Debug;
 
-use crate::SoulstrandError;
+use crate::SoulvaultError;
 
 /// Contract for a property graph store.
 ///
@@ -26,7 +26,7 @@ pub trait GraphBackend: Debug + Send + Sync {
         id: &str,
         labels: &[&str],
         props: serde_json::Value,
-    ) -> Result<(), SoulstrandError>;
+    ) -> Result<(), SoulvaultError>;
 
     /// Create or update a directed edge between two nodes.
     ///
@@ -38,20 +38,20 @@ pub trait GraphBackend: Debug + Send + Sync {
         to_id: &str,
         rel_type: &str,
         props: serde_json::Value,
-    ) -> Result<(), SoulstrandError>;
+    ) -> Result<(), SoulvaultError>;
 
     /// Delete a node and all its incident edges.
-    async fn delete_node(&self, id: &str) -> Result<(), SoulstrandError>;
+    async fn delete_node(&self, id: &str) -> Result<(), SoulvaultError>;
 
     /// Follow outgoing edges from `from_id` up to `depth` hops.
     ///
     /// Returns the IDs of all reachable nodes, not including `from_id` itself.
-    async fn traverse(&self, from_id: &str, depth: usize) -> Result<Vec<String>, SoulstrandError>;
+    async fn traverse(&self, from_id: &str, depth: usize) -> Result<Vec<String>, SoulvaultError>;
 
     /// Return the IDs of direct neighbours of `id` (depth = 1).
     ///
     /// Default implementation delegates to [`traverse`](Self::traverse).
-    async fn neighbors(&self, id: &str) -> Result<Vec<String>, SoulstrandError> {
+    async fn neighbors(&self, id: &str) -> Result<Vec<String>, SoulvaultError> {
         self.traverse(id, 1).await
     }
 }

@@ -35,7 +35,7 @@ use async_trait::async_trait;
 use moka::future::Cache;
 use sha2::{Digest, Sha256};
 
-use crate::{EmbeddingBackend, SoulstrandError};
+use crate::{EmbeddingBackend, SoulvaultError};
 
 /// Maximum number of cached embedding vectors.
 const CACHE_MAX_ENTRIES: u64 = 4_096;
@@ -94,7 +94,7 @@ impl CachedEmbeddingProvider {
 
 #[async_trait]
 impl EmbeddingBackend for CachedEmbeddingProvider {
-    async fn embed(&self, text: &str) -> Result<Vec<f32>, SoulstrandError> {
+    async fn embed(&self, text: &str) -> Result<Vec<f32>, SoulvaultError> {
         let key = Self::cache_key(text, self.name);
         if let Some(cached) = self.cache.get(&key).await {
             return Ok((*cached).clone());
@@ -104,7 +104,7 @@ impl EmbeddingBackend for CachedEmbeddingProvider {
         Ok(vec)
     }
 
-    async fn embed_batch(&self, texts: &[&str]) -> Result<Vec<Vec<f32>>, SoulstrandError> {
+    async fn embed_batch(&self, texts: &[&str]) -> Result<Vec<Vec<f32>>, SoulvaultError> {
         let mut results: Vec<Option<Vec<f32>>> = vec![None; texts.len()];
         let mut missed_indices: Vec<usize> = Vec::new();
         let mut missed_texts: Vec<&str> = Vec::new();
@@ -137,7 +137,7 @@ impl EmbeddingBackend for CachedEmbeddingProvider {
             .enumerate()
             .map(|(i, v)| {
                 v.ok_or_else(|| {
-                    SoulstrandError::Backend(format!("missing embedding result at index {i}"))
+                    SoulvaultError::Backend(format!("missing embedding result at index {i}"))
                 })
             })
             .collect()
@@ -172,7 +172,7 @@ mod tests {
 
     #[async_trait]
     impl EmbeddingBackend for CountingBackend {
-        async fn embed(&self, _text: &str) -> Result<Vec<f32>, SoulstrandError> {
+        async fn embed(&self, _text: &str) -> Result<Vec<f32>, SoulvaultError> {
             self.calls.fetch_add(1, Ordering::SeqCst);
             Ok(vec![0.0; self.dim])
         }
