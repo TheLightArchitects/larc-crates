@@ -7,9 +7,13 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[non_exhaustive]
 pub struct Helix {
+    /// Unique identifier for this helix node.
     pub id: String,
+    /// Human-readable name.
     pub name: String,
+    /// Traversal ordering mode — controls how steps are ranked during retrieval.
     pub ordering: HelixOrderingMode,
+    /// Arbitrary JSON metadata for caller-defined attributes.
     pub metadata: serde_json::Value,
 }
 
@@ -34,11 +38,17 @@ impl Helix {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[non_exhaustive]
 pub struct Step {
+    /// Unique identifier for this step.
     pub id: String,
+    /// Parent helix that owns this step.
     pub helix_id: String,
+    /// Text content of the step.
     pub content: String,
+    /// Optional ISO-8601 date string associated with the event or creation time.
     pub step_date: Option<String>,
+    /// Optional ordinal position within the helix — used for sequence-ordered helixes.
     pub step_index: Option<i64>,
+    /// Arbitrary JSON metadata for caller-defined attributes.
     pub metadata: serde_json::Value,
 }
 
@@ -60,9 +70,13 @@ impl Step {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[non_exhaustive]
 pub struct Strand {
+    /// Unique identifier for this strand.
     pub id: String,
+    /// Human-readable name for the domain axis.
     pub name: String,
+    /// Parent helix that owns this strand.
     pub helix_id: String,
+    /// Arbitrary JSON metadata for caller-defined attributes.
     pub metadata: serde_json::Value,
 }
 
@@ -82,9 +96,13 @@ impl Strand {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[non_exhaustive]
 pub struct HelixLink {
+    /// Step ID of the edge origin.
     pub source_id: String,
+    /// Step ID of the edge destination.
     pub target_id: String,
+    /// Semantic type label for the relationship (e.g. `"HAS_STEP"`, `"REFERENCES"`).
     pub link_type: String,
+    /// Edge weight in `[0.0, 1.0]` — higher is stronger.
     pub weight: f64,
 }
 
@@ -104,9 +122,13 @@ impl HelixLink {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[non_exhaustive]
 pub struct SharedExperience {
+    /// Unique identifier for this shared experience node.
     pub id: String,
+    /// Human-readable name describing the convergence.
     pub name: String,
+    /// IDs of the steps or entities that participate in this experience.
     pub participant_ids: Vec<String>,
+    /// Arbitrary JSON metadata for caller-defined attributes.
     pub metadata: serde_json::Value,
 }
 

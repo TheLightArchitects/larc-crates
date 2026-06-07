@@ -22,7 +22,7 @@ la-ayinspan        ← observability span types (zero deps)
                        │ implements
 ┌──────────────────────▼───────────────────────────────────┐
 │              lightarchitects-sdk (private)                │
-│          4-signal RRF · adaptive weights · personality   │
+│     4-signal convex fusion · adaptive weights · personality   │
 │              MCP transport · sibling dispatch             │
 └──────────────────────────────────────────────────────────┘
 ```

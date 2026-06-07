@@ -7,6 +7,8 @@ repository.workspace = true
 description = "Knowledge graph + retrieval trait definitions — facade crate for the Light Architects SOUL engine"
 keywords = ["knowledge-graph", "retrieval", "neo4j", "sqlite", "embedding"]
 categories = ["database", "data-structures", "science"]
+readme = "../../../README.md"
+homepage = "https://github.com/TheLightArchitects/la-crates"
 
 [features]
 default = []
