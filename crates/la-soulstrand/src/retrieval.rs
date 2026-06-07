@@ -63,10 +63,10 @@ pub struct SignalWeights {
     pub bm25: f64,
     /// Semantic embedding similarity signal.
     pub semantic: f64,
-    /// Graph traversal signal.
-    pub graph: f64,
     /// Structural Node2Vec signal.
     pub structural: f64,
+    /// Graph traversal signal.
+    pub graph: f64,
 }
 
 impl Default for SignalWeights {
@@ -77,12 +77,14 @@ impl Default for SignalWeights {
 
 impl SignalWeights {
     /// Create custom weights for experimentation.
-    pub fn new(bm25: f64, semantic: f64, graph: f64, structural: f64) -> Self {
+    ///
+    /// Field order matches the SDK: `(bm25, semantic, structural, graph)`.
+    pub fn new(bm25: f64, semantic: f64, structural: f64, graph: f64) -> Self {
         Self {
             bm25,
             semantic,
-            graph,
             structural,
+            graph,
         }
     }
 

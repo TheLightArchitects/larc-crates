@@ -13,6 +13,10 @@ pub struct Helix {
     pub name: String,
     /// Traversal ordering mode — controls how steps are ranked during retrieval.
     pub ordering: HelixOrderingMode,
+    /// Scope tier — governs write semantics (`"platform"`, `"user"`, `"project"`, `"shared"`).
+    ///
+    /// `None` defaults to `"user"` scope in implementations that enforce tier semantics.
+    pub scope_tier: Option<String>,
     /// Arbitrary JSON metadata for caller-defined attributes.
     pub metadata: serde_json::Value,
 }
@@ -29,6 +33,7 @@ impl Helix {
             id,
             name,
             ordering,
+            scope_tier: None,
             metadata,
         }
     }
@@ -44,8 +49,13 @@ pub struct Step {
     pub helix_id: String,
     /// Text content of the step.
     pub content: String,
+    /// Optional short title summarising the step content.
+    pub title: Option<String>,
     /// Optional ISO-8601 date string associated with the event or creation time.
     pub step_date: Option<String>,
+    /// Optional ISO-8601 expiry timestamp — after this instant the step may be
+    /// pruned by the consolidation pipeline.
+    pub expires: Option<String>,
     /// Optional ordinal position within the helix — used for sequence-ordered helixes.
     pub step_index: Option<i64>,
     /// Arbitrary JSON metadata for caller-defined attributes.
@@ -59,7 +69,9 @@ impl Step {
             id,
             helix_id,
             content,
+            title: None,
             step_date: None,
+            expires: None,
             step_index: None,
             metadata,
         }
