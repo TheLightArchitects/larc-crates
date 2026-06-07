@@ -1,6 +1,6 @@
 # la-crates
 
-Public facade crates from [The Light Architects](https://github.com/TheLightArchitect).
+Public facade crates from [The Light Architects](https://github.com/TheLightArchitects).
 
 ## Architecture
 

@@ -112,7 +112,18 @@ pub struct HelixLink {
     pub source_id: String,
     /// Step ID of the edge destination.
     pub target_id: String,
-    /// Semantic type label for the relationship (e.g. `"HAS_STEP"`, `"REFERENCES"`).
+    /// Semantic type label for the relationship.
+    ///
+    /// Canonical values used by the Light Architects SDK:
+    /// - `"HAS_STEP"` — helix → step containment
+    /// - `"REFERENCES"` — step cites another step
+    /// - `"FOLLOWS"` — sequential ordering between steps
+    /// - `"SHARED_EXPERIENCE"` — step participates in a convergence node
+    /// - `"STRAND_MEMBER"` — step belongs to a domain strand
+    ///
+    /// Custom implementations may define their own labels. The string form is
+    /// intentional — it allows third-party `HelixBackend` implementors to extend
+    /// the relationship vocabulary without forking this crate.
     pub link_type: String,
     /// Edge weight in `[0.0, 1.0]` — higher is stronger.
     pub weight: f64,
