@@ -205,7 +205,7 @@ impl TraceContext {
         self
     }
 
-    /// Attach LASDLC semantic-convention metadata.
+    /// Attach `lasdlc.*` namespaced semantic-convention metadata.
     ///
     /// Filters keys to the `lasdlc.*` namespace per
     /// [`crate::semconv::lasdlc::is_lasdlc_key`]. Non-conforming keys

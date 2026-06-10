@@ -5,8 +5,9 @@ use async_trait::async_trait;
 
 /// Transport layer for MCP JSON-RPC messages.
 ///
-/// Implement this trait to provide a custom transport (stdio, HTTP, WebSocket).
-/// The SDK provides built-in implementations for standard transports.
+/// Implement this trait to provide a custom transport (stdio, HTTP, WebSocket,
+/// in-memory for tests). The contract is intentionally minimal — a request/
+/// notify/close lifecycle plus a connectivity probe.
 ///
 /// This trait is object-safe via `async-trait`. Use `Box<dyn Transport>`
 /// for dynamic dispatch.

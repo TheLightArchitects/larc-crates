@@ -535,7 +535,7 @@ dependencies = [
 
 [[package]]
 name = "larc-ayinspan"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "chrono",
  "criterion",
@@ -550,7 +550,7 @@ dependencies = [
 
 [[package]]
 name = "larc-benchmark"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -560,7 +560,7 @@ dependencies = [
 
 [[package]]
 name = "larc-gateway"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "larc-ayinspan",
@@ -572,7 +572,7 @@ dependencies = [
 
 [[package]]
 name = "larc-lightsquad"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "serde",
@@ -583,11 +583,11 @@ dependencies = [
 
 [[package]]
 name = "larc-loops"
-version = "0.1.0"
+version = "0.1.1"
 
 [[package]]
 name = "larc-soulvault"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "moka",

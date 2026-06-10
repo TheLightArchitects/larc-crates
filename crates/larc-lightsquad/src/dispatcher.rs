@@ -4,11 +4,10 @@ use crate::{AgentStatus, BuildStatus, PlanInput, SquadError, Task, TaskStatus};
 
 /// WaveDispatcher trait — dispatches tasks within a wave to available executors.
 ///
-/// The production implementation in the SDK uses a 7-slot worker pool
-/// with concurrency-safe task routing based on file ownership contracts.
-///
-/// External users implement this to define custom dispatch strategies
-/// (priority queues, GPU affinity, cost-based routing, etc.).
+/// Implement this trait to define a dispatch strategy for tasks within a wave
+/// (priority queues, GPU affinity, cost-based routing, fixed worker pools, etc.).
+/// Tasks with `concurrency_safe: true` and non-overlapping file ownership
+/// can run in parallel; others must run sequentially.
 #[async_trait::async_trait]
 pub trait WaveDispatcher: Send + Sync {
     /// Dispatch a set of tasks within a single wave.
@@ -20,15 +19,13 @@ pub trait WaveDispatcher: Send + Sync {
 
 /// Coordinator trait — manages the full build lifecycle across multiple waves.
 ///
-/// The production implementation in the SDK orchestrates:
+/// Implement this trait to define an orchestration strategy. A typical
+/// coordinator handles:
 /// 1. Wave sequencing (wave N+1 starts after wave N completes)
 /// 2. Dependency resolution (tasks wait for their `depends_on`)
 /// 3. Quality gates between phases
 /// 4. HITL checkpoints for gate deferrals
 /// 5. Worktree lifecycle (create before, remove after)
-///
-/// External users implement this to define custom orchestration strategies
-/// (canary deployments, multi-region rollout, etc.).
 #[async_trait::async_trait]
 pub trait Coordinator: Send + Sync {
     /// Submit a build plan for execution.

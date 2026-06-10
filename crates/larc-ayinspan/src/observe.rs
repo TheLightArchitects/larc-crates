@@ -19,8 +19,8 @@ use crate::turn::TurnContext;
 /// [`SpanObserve`] observes; [`SpanEmit`] delivers.  An
 /// `ObservableTransport<T>` implements `SpanObserve` and internally holds
 /// a `Box<dyn SpanEmit>` — calling `emit` inside `on_action_finish`.  Keeping
-/// the two contracts separate allows the SDK to swap backends (file vs HTTP)
-/// without changing the observation wiring.
+/// the two contracts separate lets a consumer swap delivery backends
+/// (file vs HTTP vs in-memory) without changing the observation wiring.
 ///
 /// # Example
 ///

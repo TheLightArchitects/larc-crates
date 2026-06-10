@@ -1,9 +1,9 @@
 //! Quality gate dimensions for the Structured Delivery Protocol.
 //!
-//! The ten canonical dimensions from the Light Architects LASDLC framework.
+//! Ten canonical dimensions covering Architecture, Security, Quality, Canon,
+//! Operations, Performance, Knowledge, Documentation, Testing, and Research.
 //! Each dimension corresponds to a quality gate that can be reviewed
-//! independently. External users can add custom dimensions via
-//! `GateDimension::Custom`.
+//! independently. Add custom dimensions via [`GateDimension::Custom`].
 
 use serde::{Deserialize, Serialize};
 

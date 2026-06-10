@@ -1,4 +1,4 @@
-//! Errors for la-gateway.
+//! Errors for `larc-gateway`.
 
 /// Errors for the Light Architects gateway interface.
 #[derive(Debug, thiserror::Error)]

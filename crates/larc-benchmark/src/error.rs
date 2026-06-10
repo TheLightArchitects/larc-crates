@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-/// Errors for la-benchmark.
+/// Errors for `larc-benchmark`.
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum BenchmarkError {

@@ -1,35 +1,32 @@
-//! # la-gateway
+//! # larc-gateway
 //!
-//! Light Architects gateway interface — transport, MCP handler, and protocol types.
-//!
-//! This crate defines the **plug adapter**: how anything connects to the LA ecosystem.
-//! The private `lightarchitects-sdk` provides the concrete implementations.
+//! Gateway interface — transport abstraction, MCP handler traits, and JSON-RPC
+//! protocol types. Pure contracts; bring your own engine.
 //!
 //! ## Architecture
 //!
 //! ```text
-//! la-gateway (interface — how you plug in)
+//! larc-gateway (interface — how you plug in)
 //! ├── [default]: Transport, SdkError, Config, SiblingId, JSON-RPC types
 //! ├── feature "mcp": McpHandler, SiblingHandler, HandlerError, HandlerConfig
-//! └── feature "ayin": ObservableTransport + re-exports la-ayinspan
+//! └── feature "ayin": ObservableTransport + re-exports larc-ayinspan
 //! ```
 //!
-//! The typed sibling clients (SoulClient, CorsoClient, etc.) live in the SDK.
-//! la-gateway only defines the protocol — how you connect, how you dispatch,
-//! and the shape of the messages on the wire.
+//! This crate defines the protocol surface — how you connect, how you dispatch,
+//! and the shape of the messages on the wire. Concrete client wrappers and
+//! transport implementations are left to consumers.
 //!
 //! ## Usage
 //!
 //! ```toml
 //! [dependencies]
-//! # Gateway connection types
-//! la-gateway = { git = "https://github.com/TheLightArchitect/lightarchitects-sdk" }
+//! larc-gateway = "0.1"
 //!
 //! # With MCP handler traits
-//! la-gateway = { git = "...", features = ["mcp"] }
+//! larc-gateway = { version = "0.1", features = ["mcp"] }
 //!
-//! # Production implementation
-//! lightarchitects = { git = "...", features = ["soul"] }
+//! # With AYIN observability re-exports
+//! larc-gateway = { version = "0.1", features = ["ayin"] }
 //! ```
 
 mod config;
@@ -51,7 +48,7 @@ mod handler;
 #[cfg(feature = "mcp")]
 pub use handler::{HandlerConfig, HandlerError, McpHandler, SiblingHandler};
 
-// Feature-gated: AYIN observability (re-exports la-ayinspan)
+// Feature-gated: AYIN observability (re-exports `larc-ayinspan`)
 #[cfg(feature = "ayin")]
 mod observe;
 

@@ -4,9 +4,10 @@ use crate::{Archetype, Task, TaskContract, TaskStatus};
 
 /// Executor trait — implemented by anything that can perform work.
 ///
-/// The private `lightarchitects-sdk` provides production implementations
-/// (CORSO, EVA, QUANTUM, etc.). External users implement this trait to
-/// define custom workers for their own domains.
+/// Implement this trait to define a worker for your domain. The executor
+/// receives a [`Task`] and reports a [`TaskStatus`] when complete; the
+/// [`TaskContract`] declares which files the worker owns and whether the
+/// work is safe to run concurrently with other tasks.
 ///
 /// # Example
 ///

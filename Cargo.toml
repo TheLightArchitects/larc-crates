@@ -10,7 +10,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 license = "Apache-2.0"
 repository = "https://github.com/TheLightArchitects/larc-crates"
@@ -18,12 +18,12 @@ rust-version = "1.85"
 
 [workspace.dependencies]
 # Internal — `version` is used by `cargo publish`; `path` is used for local builds.
-larc-soulvault = { path = "crates/larc-soulvault", version = "0.1.0" }
-larc-benchmark = { path = "crates/larc-benchmark", version = "0.1.0" }
-larc-gateway = { path = "crates/larc-gateway", version = "0.1.0" }
-larc-ayinspan = { path = "crates/larc-ayinspan", version = "0.1.0" }
-larc-lightsquad = { path = "crates/larc-lightsquad", version = "0.1.0" }
-larc-loops = { path = "crates/larc-loops", version = "0.1.0" }
+larc-soulvault = { path = "crates/larc-soulvault", version = "0.1.1" }
+larc-benchmark = { path = "crates/larc-benchmark", version = "0.1.1" }
+larc-gateway = { path = "crates/larc-gateway", version = "0.1.1" }
+larc-ayinspan = { path = "crates/larc-ayinspan", version = "0.1.1" }
+larc-lightsquad = { path = "crates/larc-lightsquad", version = "0.1.1" }
+larc-loops = { path = "crates/larc-loops", version = "0.1.1" }
 
 # Shared
 serde = { version = "1", features = ["derive"] }

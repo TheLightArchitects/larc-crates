@@ -1,7 +1,7 @@
 //! Pipeline contract types — Context Vector, constraint manifest, and safe feedback wire.
 //!
-//! Formalises the three-layer context assembly protocol (Builders Cookbook §66.5)
-//! and the structural sanitization gate (Security Guardrails §3.4.1) as
+//! Defines a three-layer context-assembly protocol for supervised multi-agent
+//! pipelines, plus a structural sanitization gate for compiler/test output as
 //! machine-readable, serde-compatible types.
 
 use serde::{Deserialize, Serialize};
@@ -15,8 +15,6 @@ use thiserror::Error;
 /// Specifies the runtime, edition, and exact crate versions the Coder agent
 /// must target. Prevents version-drift hallucinations by providing a hard
 /// API-cutoff rule alongside the lockfile data.
-///
-/// Corresponds to Builders Cookbook §66.5 Layer A.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct EnvironmentManifest {
@@ -55,8 +53,6 @@ impl EnvironmentManifest {
 /// Extracted via LSP or Tree-sitter. Provides the Coder agent with the exact
 /// public contract it must satisfy without the implementation details that
 /// pollute attention weights.
-///
-/// Corresponds to Builders Cookbook §66.5 Layer B.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct InterfaceStub {
@@ -86,24 +82,21 @@ impl InterfaceStub {
 
 /// Machine-readable hard constraints — Layer C of the [`ContextVector`].
 ///
-/// Boolean fields map directly to Builders Cookbook §3 obligations. Using a
-/// structured type (rather than prose) makes the constraints diff-able,
-/// auditable, and testable.
-///
-/// Corresponds to Builders Cookbook §66.5 Layer C.
+/// Boolean fields encode coding-style obligations. Using a structured type
+/// (rather than prose) makes the constraints diff-able, auditable, and testable.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct ConstraintManifest {
-    /// Forbid heap allocation in inner loops (§3: stack-primitive preference).
+    /// Forbid heap allocation in inner loops (prefer stack primitives).
     #[serde(default)]
     pub no_heap_alloc_inner_loops: bool,
-    /// Forbid `.unwrap()` calls (§3: no unwrap in production).
+    /// Forbid `.unwrap()` calls in production code paths.
     #[serde(default)]
     pub no_unwrap: bool,
-    /// Forbid `.expect()` calls (§3: no expect in production).
+    /// Forbid `.expect()` calls in production code paths.
     #[serde(default)]
     pub no_expect: bool,
-    /// Require `Send + Sync` bounds on all shared state (§3: thread-safety).
+    /// Require `Send + Sync` bounds on all shared state.
     #[serde(default)]
     pub send_sync_required: bool,
     /// Forbid importing crates absent from `EnvironmentManifest::strict_lockfile`.
@@ -143,7 +136,7 @@ impl ConstraintManifest {
         }
     }
 
-    /// All Cookbook §3 Rust obligations enabled.
+    /// All standard Rust safety obligations enabled.
     ///
     /// `no_heap_alloc_inner_loops` is left `false` — it is context-dependent
     /// and must be opted into by the caller.
@@ -164,16 +157,16 @@ impl ConstraintManifest {
 
 /// Assembled three-layer context passed to a pipeline agent at spawn.
 ///
-/// The orchestrator is the **sole assembler** of a `ContextVector`
-/// (Builders Cookbook §66.5 — extends §66.3). A sealed `ContextVector`
-/// arrives at the agent spawn boundary; agents receive it, they do not
-/// build it. An agent constructing its own context violates §66.3.
+/// The orchestrator is the **sole assembler** of a `ContextVector`. A sealed
+/// `ContextVector` arrives at the agent spawn boundary; agents receive it,
+/// they do not build it. An agent that constructs its own context defeats
+/// the safety of the assembly protocol.
 ///
-/// | Layer | Field | §66 Tier | Content |
-/// |-------|-------|----------|---------|
-/// | A | [`env`](ContextVector::env) | Tier 1 (stable) | Locked runtime + versions |
-/// | B | [`stubs`](ContextVector::stubs) | Tier 1 (dynamic) | Interface signatures |
-/// | C | [`constraints`](ContextVector::constraints) | Tier 1 (stable) | §3 hard bounds |
+/// | Layer | Field | Content |
+/// |-------|-------|---------|
+/// | A | [`env`](ContextVector::env) | Locked runtime + crate versions + API cutoff |
+/// | B | [`stubs`](ContextVector::stubs) | Interface signatures (no bodies) |
+/// | C | [`constraints`](ContextVector::constraints) | Hard coding-style bounds |
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct ContextVector {
@@ -182,7 +175,7 @@ pub struct ContextVector {
     /// Layer B — interface stubs (signatures only, zero bodies).
     #[serde(default)]
     pub stubs: Vec<InterfaceStub>,
-    /// Layer C — hard constraint manifest mapping to Cookbook §3 obligations.
+    /// Layer C — hard constraint manifest of coding-style obligations.
     pub constraints: ConstraintManifest,
 }
 
@@ -211,8 +204,9 @@ impl ContextVector {
 /// ANSI escape sequences, and role-override tokens are stripped before this
 /// type is populated.
 ///
-/// Per Security Guardrails §3.4.1 (OWASP LLM01, CWE-77): `"cleaned"` is a
-/// parsing heuristic, not a security property. Structural parsing is.
+/// Treats the OWASP LLM01 (Prompt Injection) and CWE-77 (Improper
+/// Neutralization) classes as design constraints: "cleaned" is a parsing
+/// heuristic, not a security property. Structural parsing is.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct CompilerDiagnostic {
@@ -258,12 +252,12 @@ impl CompilerDiagnostic {
 ///
 /// All compiler and test-runner output MUST be parsed through a structural
 /// allowlist before producing a `SanitizedTrace`. Raw strings must not be
-/// injected into the Coder agent's prompt (Security Guardrails §3.4.1).
+/// injected into the Coder agent's prompt (prompt-injection class).
 ///
 /// # Constructing safely
 ///
 /// Use [`SanitizedTrace::from_cargo_json`] to parse `cargo --message-format=json`
-/// NDJSON output. The parser applies the §3.4.1 allowlist — only fields in
+/// NDJSON output. The parser applies the allowlist — only fields in
 /// `{file, line, error_code, message ≤512 bytes}` survive. Malformed lines are
 /// silently dropped; only `SanitizeError::EmptyInput` is a hard error.
 ///
@@ -275,7 +269,7 @@ pub struct SanitizedTrace {
     /// Allowlist-parsed diagnostics — one entry per compiler error or test failure.
     #[serde(default)]
     pub diagnostics: Vec<CompilerDiagnostic>,
-    /// Zero-indexed correction iteration (0..=2 for the §64.3 ceiling of 3).
+    /// Zero-indexed correction iteration (typically 0..=2 under a max-3 ceiling).
     ///
     /// Allows the Coder to calibrate correction aggression by iteration.
     pub loop_index: u8,
@@ -312,7 +306,7 @@ impl SanitizedTrace {
     ///    `cargo test --message-format=json`. Extracts test name and `stdout`.
     ///
     /// All other NDJSON lines are silently dropped — structural allowlist
-    /// (Security Guardrails §3.4.1). ANSI escape sequences are stripped.
+    /// behaviour. ANSI escape sequences are stripped.
     /// Messages are truncated to 512 bytes. Malformed JSON lines are skipped.
     ///
     /// # Errors

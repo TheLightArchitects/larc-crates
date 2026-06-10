@@ -1,4 +1,4 @@
-//! SDK configuration types.
+//! Gateway connection configuration.
 
 use serde::{Deserialize, Serialize};
 

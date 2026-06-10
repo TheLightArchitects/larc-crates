@@ -1,7 +1,7 @@
 //! `EmbeddingBackend` — contract for text embedding models.
 //!
 //! Implement this to plug in any embedding provider:
-//! fastembed (SDK default), OpenAI `text-embedding-3-small`, Ollama, etc.
+//! `fastembed`, OpenAI `text-embedding-3-small`, Ollama, in-memory mocks, etc.
 
 use async_trait::async_trait;
 use std::fmt::Debug;
@@ -10,8 +10,7 @@ use crate::SoulvaultError;
 
 /// Contract for a text embedding model.
 ///
-/// The production implementation in `lightarchitects-sdk` uses `fastembed`.
-/// Implement this trait to substitute any embedding provider.
+/// Implement this trait to plug in any embedding provider.
 ///
 /// # Example
 ///

@@ -21,11 +21,7 @@ pub(crate) enum ArchetypeRole {
 /// Archetype trait — declares what role a worker plays in the squad.
 ///
 /// Implement this trait to define a worker, gatekeeper, or observer
-/// that the squad engine can route work to.
-///
-/// The production implementations (CORSO, EVA, SOUL, QUANTUM, SERAPH, LÆX, AYIN)
-/// live in `lightarchitects-sdk`. External teams implement this trait for
-/// their own domain.
+/// that a squad engine can route work to.
 ///
 /// # Example
 ///

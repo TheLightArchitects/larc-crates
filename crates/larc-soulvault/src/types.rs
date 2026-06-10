@@ -114,7 +114,7 @@ pub struct HelixLink {
     pub target_id: String,
     /// Semantic type label for the relationship.
     ///
-    /// Canonical values used by the Light Architects SDK:
+    /// Canonical values:
     /// - `"HAS_STEP"` — helix → step containment
     /// - `"REFERENCES"` — step cites another step
     /// - `"FOLLOWS"` — sequential ordering between steps

@@ -24,16 +24,16 @@ pub enum Tier {
 /// | Session | Recent conversation, task-specific context | ~5K tokens |
 ///
 /// The `tier` field uses `u8` (0, 1, 2) as the canonical representation.
-/// The SDK uses `String` (`"T1"`, `"T2"`, `"T3"`) internally. Conversion
-/// methods bridge the two: [`tier_from_string`] for SDK → public, and
-/// [`tier_to_string`] for public → SDK.
+/// String form (`"T1"`, `"T2"`, `"T3"`) is supported via conversion helpers
+/// [`tier_from_string`] and [`tier_to_string`] for systems that prefer
+/// labelled tiers on the wire.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct ContextTier {
     /// Tier number (0 = canon, 1 = project, 2 = session).
     ///
-    /// The canonical wire format. The SDK's `"T1"/"T2"/"T3"` string format
-    /// converts to/from this via [`tier_from_string`] and [`tier_to_string`].
+    /// The canonical wire format. String form (`"T1"/"T2"/"T3"`) converts
+    /// to/from this via [`tier_from_string`] and [`tier_to_string`].
     pub tier: u8,
     /// Human-readable label.
     pub label: String,
@@ -55,8 +55,8 @@ impl ContextTier {
         }
     }
 
-    /// Convert from the SDK's string tier format (`"T1"`, `"T2"`, `"T3"`)
-    /// to the canonical `u8` tier number.
+    /// Convert from string tier format (`"T1"`, `"T2"`, `"T3"`) to the
+    /// canonical `u8` tier number.
     ///
     /// Returns `None` for unrecognized tier strings.
     #[must_use]
@@ -69,7 +69,7 @@ impl ContextTier {
         }
     }
 
-    /// Convert from the canonical `u8` tier number to the SDK's string format.
+    /// Convert from the canonical `u8` tier number to the string format.
     ///
     /// Returns `None` for tier numbers outside 0–2.
     #[must_use]

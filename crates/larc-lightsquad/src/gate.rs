@@ -5,11 +5,14 @@ use crate::{Archetype, Decision, Task};
 /// ReviewGate trait — implemented by anything that reviews work against standards.
 ///
 /// Gatekeepers have veto authority on their gate dimensions. If a Gatekeeper
-/// returns `Verdict::Reject`, the work must be revised before proceeding.
+/// returns [`Verdict::Reject`], the work must be revised before proceeding.
 ///
-/// The production implementations (CORSO for [A+Q+T], SERAPH for [S],
-/// LÆX for [C], etc.) live in the SDK. External users implement this trait
-/// to define custom quality gates for their own domains.
+/// Implement this trait to define a quality gate. A single gate may own
+/// multiple [`GateDimension`]s (see [`Archetype::gate_dimensions`]).
+///
+/// [`Verdict::Reject`]: crate::Verdict::Reject
+/// [`GateDimension`]: crate::GateDimension
+/// [`Archetype::gate_dimensions`]: crate::Archetype::gate_dimensions
 ///
 /// # Example
 ///

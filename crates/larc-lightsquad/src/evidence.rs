@@ -1,4 +1,4 @@
-//! Correction-loop evidence bundle — Rust companion to §57.2b `evidence-bundle.json`.
+//! Correction-loop evidence bundle.
 
 use crate::critic::Vulnerability;
 use crate::pipeline::CompilerDiagnostic;
@@ -6,25 +6,23 @@ use serde::{Deserialize, Serialize};
 
 /// Structured evidence artifact for a fix-agent correction iteration.
 ///
-/// Rust companion to the §57.2b `evidence-bundle.json` canonical schema.
-/// Replaces the ad-hoc "cleaned stack trace" string with a structured,
-/// allowlist-parsed, AYIN-observable record.
+/// A correction-loop record carrying the failing test name, the assertion that
+/// failed, allowlist-parsed compiler/test diagnostics, reviewer findings, and
+/// pointers to supporting artifacts. Replaces ad-hoc "stack trace" strings with
+/// a typed, deterministic input for the next correction step.
 ///
-/// The TypeScript counterpart lives at
-/// `lightarchitects-webshell-ui/e2e/lib/artifacts.ts`.
+/// # Fields
 ///
-/// # §57.2b field mapping
-///
-/// | §57.2b field | This field | Notes |
-/// |---|---|---|
-/// | `test_name` | `test_name` | exact |
-/// | `assertion_text` | `assertion_text` | exact |
-/// | last 10 SSE frames | `last_sse_frames` | capped at 10 entries |
-/// | artifact paths | `artifact_paths` | exact |
-/// | AYIN span summary | `ayin_span_id` | UUID string; fetch detail via `:3742/api/spans/{id}` |
-/// | *(added)* | `cargo_test_failures` | allowlist-parsed cargo test errors (§3.4.1) |
-/// | *(added)* | `loop_index` | 0-indexed iteration for Coder aggression calibration |
-/// | *(added)* | `critic_vulnerabilities` | Reviewer→Coder findings (Gap A closure) |
+/// | Field | Purpose |
+/// |---|---|
+/// | `test_name` | Name of the failing test. |
+/// | `assertion_text` | Text of the assertion that failed. |
+/// | `loop_index` | 0-indexed correction iteration (for aggression calibration). |
+/// | `cargo_test_failures` | Allowlist-parsed compiler/test errors. |
+/// | `ayin_span_id` | Trace span UUID for correlated observability. |
+/// | `critic_vulnerabilities` | Reviewer-identified findings for this iteration. |
+/// | `artifact_paths` | Paths to supporting artifacts (logs, snapshots). |
+/// | `last_sse_frames` | Last ≤10 SSE frames from the test session. |
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct EvidenceBundle {
@@ -38,28 +36,29 @@ pub struct EvidenceBundle {
     pub loop_index: u8,
     /// Allowlist-parsed compiler and test-runner failures.
     ///
-    /// Replaces the bespoke "cleaned stack trace" string. Each entry was
-    /// produced by a structural allowlist parser (Security Guardrails §3.4.1).
+    /// Each entry is the output of a structural allowlist parser (no raw
+    /// strings, no ANSI escapes, no role-override tokens). See
+    /// [`CompilerDiagnostic`] for the field shape.
     #[serde(default)]
     pub cargo_test_failures: Vec<CompilerDiagnostic>,
-    /// AYIN span ID for this correction iteration (UUID v4 string).
+    /// Trace span ID for this correction iteration (UUID v4 string).
     ///
-    /// `None` when AYIN is not wired into the pipeline. When `Some`, the
-    /// consumer may fetch the full span summary via `GET :3742/api/spans/{id}`.
+    /// `None` when no tracing backend is wired into the pipeline. When `Some`,
+    /// the consumer may correlate this iteration to the originating trace.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ayin_span_id: Option<String>,
     /// Paths to supporting artifacts (test logs, snapshots, generated files).
     #[serde(default)]
     pub artifact_paths: Vec<String>,
-    /// Last ≤10 SSE frames from the test session (per §57.2b).
+    /// Last ≤10 SSE frames from the test session.
     #[serde(default)]
     pub last_sse_frames: Vec<String>,
     /// Reviewer-identified vulnerabilities for this correction iteration.
     ///
     /// Populated when the Critic rejected in the same loop iteration.
     /// Empty when the correction was triggered by compiler/test failures only.
-    /// Closes the Reviewer→Coder feedback path — vulnerabilities and compiler
-    /// failures share a single correction envelope (Gap A, SCRUM gleaming-marble).
+    /// Carrying vulnerabilities and compiler failures in a single envelope
+    /// lets the Coder treat both classes of feedback uniformly.
     #[serde(default)]
     pub critic_vulnerabilities: Vec<Vulnerability>,
 }

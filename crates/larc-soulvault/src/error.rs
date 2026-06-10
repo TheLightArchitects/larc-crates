@@ -1,6 +1,6 @@
-//! Errors for la-soulvault.
+//! Errors for `larc-soulvault`.
 
-/// Errors for the SOUL knowledge graph.
+/// Errors emitted by the knowledge graph traits and types.
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum SoulvaultError {

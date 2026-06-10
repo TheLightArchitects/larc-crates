@@ -114,8 +114,8 @@ pub trait TurnTracking {
 /// current turn-root span.  No file I/O, no async runtime — safe to use in
 /// any context.
 ///
-/// The SDK wraps this in a `tokio::task_local!` scope to propagate context
-/// automatically across async boundaries.
+/// Async wrappers typically wrap this in a `tokio::task_local!` scope to
+/// propagate context automatically across async boundaries.
 #[derive(Debug, Clone)]
 pub struct TurnTracker {
     session_id: String,

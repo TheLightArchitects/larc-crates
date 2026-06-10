@@ -1,4 +1,4 @@
-//! Errors for la-lightsquad.
+//! Errors for `larc-lightsquad`.
 
 /// Errors for the Structured Delivery Protocol.
 #[derive(Debug, thiserror::Error)]

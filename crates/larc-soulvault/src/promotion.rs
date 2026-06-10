@@ -1,7 +1,7 @@
 //! `PromotionBackend` — contract for the consolidation pipeline.
 //!
 //! Implement this to plug in custom promotion logic:
-//! the SDK's `SoulConsolidator` daemon, a batch job, a no-op stub, etc.
+//! a long-running daemon, a batch job, a no-op stub, etc.
 
 use async_trait::async_trait;
 use std::fmt::Debug;
@@ -14,8 +14,7 @@ use crate::{SoulvaultError, Step, Tier};
 /// turn-log entries into permanent helix steps, manages tier transitions,
 /// and deduplicates content.
 ///
-/// The production implementation is the `soul-consolidator` daemon in
-/// `lightarchitects-sdk`. Implement this trait to provide a custom pipeline.
+/// Implement this trait to provide a consolidation pipeline.
 #[async_trait]
 pub trait PromotionBackend: Debug + Send + Sync {
     /// Promote a batch of raw steps into enriched helix entries.

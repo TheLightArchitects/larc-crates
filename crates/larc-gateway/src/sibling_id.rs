@@ -4,21 +4,22 @@ use serde::{Deserialize, Serialize};
 
 /// Canonical sibling identifiers.
 ///
-/// Each variant corresponds to a Light Architects sibling binary
-/// that the gateway can spawn on-demand.
+/// Each variant names a sibling binary the gateway can dispatch to.
+/// The identifier is the protocol-level handle; the binary itself is
+/// supplied by the consumer at runtime.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 #[non_exhaustive]
 pub enum SiblingId {
-    /// CORSO — AppSec orchestration (Trinity V7.0).
+    /// CORSO — AppSec and code-quality orchestration.
     Corso,
-    /// EVA — DevOps, consciousness, memory vaults.
+    /// EVA — DevOps, CI/CD, and operational memory.
     Eva,
-    /// SOUL — Knowledge graph, helix retrieval.
+    /// SOUL — Knowledge graph and semantic retrieval.
     Soul,
-    /// QUANTUM — Forensic investigation.
+    /// QUANTUM — Forensic investigation and risk analysis.
     Quantum,
-    /// SERAPH — Pentest orchestration.
+    /// SERAPH — Red team and offensive security.
     Seraph,
     /// AYIN — Observability (HTTP-only, not spawned).
     Ayin,

@@ -1,8 +1,8 @@
 //! Critic/Reviewer agent output types — structured review with calibration baseline.
 //!
-//! Closes SCRUM gaps G9 (Critic calibration protocol) and G11 (Reviewer findings
-//! helix write path). These types define the Negative Bias Reviewer's structured
-//! output contract and the finding lifecycle that feeds the SOUL knowledge graph.
+//! Defines the structured output contract for a Negative-Bias Reviewer (reads
+//! code with the assumption that it is broken) and the finding lifecycle that
+//! feeds downstream knowledge-graph storage.
 
 use serde::{Deserialize, Serialize};
 
@@ -10,13 +10,13 @@ use serde::{Deserialize, Serialize};
 
 /// Lifecycle status of a single reviewer finding.
 ///
-/// Determines whether the finding is routed to the SOUL helix vault.
-/// Findings with recurrence ≥2 across pipeline runs and `status` of
-/// `Actioned` or `Bypassed` are auto-promoted to helix entries at
-/// significance ≥6.0 (SOUL Round 2 finding, SCRUM gleaming-marble).
+/// Determines whether the finding is routed to long-term knowledge storage.
+/// Typical retention policy: findings with `recurrence ≥ 2` across pipeline
+/// runs and `status` of `Actioned` or `Bypassed` are eligible for promotion
+/// to permanent storage; transient `Pending` findings are not.
 ///
-/// `Waived` findings are preserved with a rationale to prevent
-/// helix pollution from false positives — a bypassed finding without
+/// `Waived` carries a rationale string to distinguish accepted-with-reason
+/// findings from silently bypassed ones — a bypassed finding without
 /// rationale is indistinguishable from a real unresolved finding.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -68,8 +68,8 @@ pub enum VulnerabilityKind {
 
 /// A single vulnerability or quality issue identified by the Critic agent.
 ///
-/// Line-level attribution is load-bearing — prose-only findings are not
-/// actionable (CORSO Round 1 finding, SCRUM gleaming-marble).
+/// Line-level attribution is load-bearing — prose-only findings without an
+/// anchored line number cannot be auto-acted upon by the downstream Coder agent.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct Vulnerability {
@@ -88,9 +88,9 @@ pub struct Vulnerability {
     /// Number of times this finding pattern appeared in prior pipeline runs.
     ///
     /// `0` = first occurrence (Critic just surfaced it). Set by the orchestrator
-    /// after querying the SOUL helix for recurrence history. Findings with
-    /// `recurrence >= 2 && status == FindingStatus::Bypassed` are auto-promoted
-    /// to the helix at significance ≥6.0 (SOUL G11 finding, SCRUM gleaming-marble).
+    /// after querying long-term storage for recurrence history. A typical
+    /// retention policy promotes findings with `recurrence >= 2 && status ==
+    /// FindingStatus::Bypassed` to permanent storage with elevated significance.
     #[serde(default)]
     pub recurrence: u32,
     /// UUID v4 string of the pipeline run that produced this finding.
@@ -127,11 +127,10 @@ impl Default for FindingStatus {
 
 /// A single few-shot calibration exemplar for the Critic agent.
 ///
-/// Per QUANTUM Round 2 finding: a Critic with no rejection baseline and no
-/// exemplars is a single-source inference engine with unknown false-positive
-/// and false-negative rates. At minimum three exemplars are required — one
-/// that should be approved, one that should be rejected, one that should
-/// escalate (QUANTUM Round 1, SCRUM gleaming-marble).
+/// A Critic with no rejection baseline and no exemplars is a single-source
+/// inference engine with unknown false-positive and false-negative rates.
+/// At minimum three exemplars are recommended — one that should be approved,
+/// one that should be rejected, one that should escalate.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct CriticExemplar {
@@ -166,7 +165,7 @@ impl CriticExemplar {
 /// Critic can be audited for correctness. A Critic with `rejection_count_this_session`
 /// below the baseline triggers a calibration warning surfaced in the build dashboard.
 ///
-/// # Minimum requirements (QUANTUM finding)
+/// # Minimum requirements
 ///
 /// - At least 3 exemplars: one approval, one rejection, one escalation
 /// - `rejection_baseline_min` > 0.0 (a 0% floor is equivalent to no baseline)
@@ -198,17 +197,17 @@ impl CriticCalibration {
 
 // ── Critic review output ──────────────────────────────────────────────────────
 
-/// Structured output of the Critic (Negative Bias Reviewer) agent.
+/// Structured output of the Critic (Negative-Bias Reviewer) agent.
 ///
 /// The Critic reads code with the assumption that it is broken and applies a
-/// fixed evaluation matrix (CORSO Round 1, SCRUM gleaming-marble):
+/// fixed evaluation matrix:
 ///
 /// 1. Does any finding violate a `ConstraintManifest` hard bound?
 /// 2. Are there resource leaks (unclosed sockets, un-dropped locks)?
 /// 3. Does the code handle empty, null, or out-of-bounds collection access?
 ///
 /// The `rejection_count_this_session` and `total_reviews_this_session` fields
-/// enable QUANTUM's calibration protocol — a Critic that never rejects is
+/// enable a calibration protocol — a Critic that never rejects is
 /// indistinguishable from no Critic. The orchestrator populates both counters
 /// and computes `calibration_alert` by comparing the rejection rate against
 /// `CriticCalibration::rejection_baseline_min`.
@@ -243,8 +242,8 @@ pub struct CriticReview {
     /// `None` = calibration satisfied (or `CriticCalibration` not wired).
     /// `Some(msg)` = the rejection rate fell below
     /// `CriticCalibration::rejection_baseline_min`; the pipeline continues but
-    /// the operator is notified via the build dashboard. A Critic that never
-    /// rejects is indistinguishable from no Critic (QUANTUM Round 2 finding).
+    /// the operator should be notified. A Critic that never rejects is
+    /// indistinguishable from no Critic.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub calibration_alert: Option<String>,
 }

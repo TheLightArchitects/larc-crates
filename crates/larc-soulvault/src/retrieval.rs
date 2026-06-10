@@ -78,7 +78,7 @@ impl Default for SignalWeights {
 impl SignalWeights {
     /// Create custom weights for experimentation.
     ///
-    /// Field order matches the SDK: `(bm25, semantic, structural, graph)`.
+    /// Field order: `(bm25, semantic, structural, graph)`.
     pub fn new(bm25: f64, semantic: f64, structural: f64, graph: f64) -> Self {
         Self {
             bm25,

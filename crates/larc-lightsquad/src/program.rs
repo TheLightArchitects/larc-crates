@@ -4,16 +4,17 @@ use crate::{BuildStatus, PlanInput, SquadError};
 
 /// BuildProgram trait — defines a complete build lifecycle from plan to completion.
 ///
-/// This is the highest-level orchestration interface. It takes a `PlanInput`
+/// This is the highest-level orchestration interface. It takes a [`PlanInput`]
 /// and drives it through all phases, waves, and quality gates to completion.
 ///
-/// The production implementation in the SDK follows the LASDLC tier model:
-/// - Small (4 phases, lighter gates)
-/// - Medium (6 phases, standard gates)
-/// - Large (7 phases, full gates)
+/// Implement this trait to define a build pipeline. A typical implementation
+/// will tier its phase set by [`PlanInput::tier`] — for example, four phases
+/// with lighter gates for [`Tier::Small`], six for [`Tier::Medium`], seven for
+/// [`Tier::Large`].
 ///
-/// External users implement this to define custom build pipelines
-/// (CI/CD integration, multi-environment promotion, etc.).
+/// [`Tier::Small`]: crate::Tier::Small
+/// [`Tier::Medium`]: crate::Tier::Medium
+/// [`Tier::Large`]: crate::Tier::Large
 #[async_trait::async_trait]
 pub trait BuildProgram: Send + Sync {
     /// Start executing a build plan.

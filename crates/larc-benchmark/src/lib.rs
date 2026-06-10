@@ -1,10 +1,9 @@
-//! # la-benchmark
+//! # larc-benchmark
 //!
 //! Domain-agnostic performance benchmark trait definitions for knowledge retrieval systems.
 //!
-//! This crate defines the **interfaces** (traits, types, errors) that the private
-//! `lightarchitects-sdk` implements. Users can implement these traits themselves
-//! or consume the SDK via git dependency.
+//! Implement [`BenchmarkSuite`] to define a benchmark for your retrieval system.
+//! Use [`BenchmarkReport`], [`Metric`], and [`MetricValue`] to structure results.
 //!
 //! ## Quick start
 //!
@@ -23,15 +22,13 @@
 //! }
 //! ```
 //!
-//! ## Implementations
+//! ## Datasets
 //!
-//! The concrete runner and dataset implementations live in the `lightarchitects-sdk` crate.
-//! To use the production runner:
+//! Enable the `longmemeval` feature to use the `LongMemEval` dataset types.
 //!
 //! ```toml
 //! [dependencies]
-//! la-benchmark = { git = "https://github.com/TheLightArchitect/lightarchitects-sdk" }
-//! lightarchitects = { git = "https://github.com/TheLightArchitect/lightarchitects-sdk", features = ["benchmark"] }
+//! larc-benchmark = { version = "0.1", features = ["longmemeval"] }
 //! ```
 
 mod error;
@@ -40,10 +37,9 @@ mod report;
 pub use error::BenchmarkError;
 pub use report::{BenchmarkReport, Metric, MetricValue};
 
-/// Core trait that all benchmark suites implement.
+/// Core trait for benchmark suites.
 ///
-/// Implement this trait to define a benchmark suite for your retrieval system.
-/// The production runner lives in `lightarchitects-sdk`.
+/// Implement to define a benchmark for your retrieval system.
 pub trait BenchmarkSuite {
     /// Human-readable name for this benchmark suite.
     fn name(&self) -> &str;

@@ -14,15 +14,12 @@ pub enum WorktreeStatus {
     Removed,
 }
 
-/// WorktreeManager trait — manages isolated git worktrees for task execution.
+/// WorktreeManager trait — manages isolated workspaces for task execution.
 ///
-/// Each delivery task runs in its own worktree to prevent file conflicts
-/// between concurrent tasks. The production implementation uses
-/// `git worktree add/remove` under the hood.
-///
-/// The SDK provides the real implementation. External users can provide
-/// alternative isolation strategies (Docker containers, chroot, etc.)
-/// by implementing this trait.
+/// Each delivery task runs in its own isolated workspace to prevent file
+/// conflicts between concurrent tasks. Implement this trait to define an
+/// isolation strategy — `git worktree add/remove`, Docker containers,
+/// `chroot`, in-memory filesystems, etc.
 #[async_trait::async_trait]
 pub trait WorktreeManager: Send + Sync {
     /// Create a new worktree for a task.

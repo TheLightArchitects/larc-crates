@@ -1,7 +1,7 @@
 //! `GraphBackend` — contract for property graph stores.
 //!
 //! Implement this to plug in any graph database:
-//! Neo4j (SDK default), Memgraph, Amazon Neptune, in-memory, etc.
+//! Neo4j, Memgraph, Amazon Neptune, in-memory, etc.
 
 use async_trait::async_trait;
 use std::fmt::Debug;
@@ -12,8 +12,6 @@ use crate::SoulvaultError;
 ///
 /// Exposes graph primitives — node upsert, edge upsert, traversal, neighbours —
 /// without coupling to any specific query language or wire protocol.
-///
-/// The production implementation in `lightarchitects-sdk` uses Neo4j + Cypher.
 #[async_trait]
 pub trait GraphBackend: Debug + Send + Sync {
     /// Create or update a node.

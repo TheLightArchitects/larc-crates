@@ -178,10 +178,11 @@ impl EscalationEvent {
 /// A single entry in the build's HMAC-chained decision log, as returned by
 /// `GET /api/builds/:id/decisions`.
 ///
-/// This is the **public view** — the SDK's internal `HashChain::DecisionEntry`
-/// carries `prev_hash: [u8; 32]` and `entry_hash: [u8; 32]` crypto fields that
-/// must never appear in the public API. This DTO is what the TypeScript
-/// frontend consumes.
+/// This is the **public view** of a decision-log entry. Implementations that
+/// maintain an HMAC-chained log keep the `prev_hash` and `entry_hash` crypto
+/// fields private; only [`hmac_ok`] (verification result) is exposed.
+///
+/// [`hmac_ok`]: DecisionEntryDto::hmac_ok
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct DecisionEntryDto {
@@ -220,10 +221,9 @@ impl DecisionEntryDto {
 
 /// SSE payload: liveness signal from an agent during long-running operations.
 ///
-/// Emitted every 10 seconds per agent. The orchestrator alerts if the gap
-/// between heartbeats exceeds 15 seconds (AYIN Round 2 finding, SCRUM
-/// gleaming-marble G12). Enables detection of silent agent stalls without
-/// requiring HITL intervention.
+/// Typically emitted every 10 seconds per agent. An orchestrator can alert
+/// when the gap between heartbeats exceeds a threshold (e.g. 15 seconds),
+/// catching silent agent stalls without requiring human intervention.
 ///
 /// Wire format: `{"type":"agent_heartbeat","build_id":"...","agent_id":"...","stage":"..."}`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -257,10 +257,9 @@ impl AgentHeartbeatEvent {
 
 /// SSE payload: per-iteration performance metrics from the Tester agent.
 ///
-/// Emitted at the end of each correction loop iteration. Feeds the AYIN
-/// [P] performance gate — a >5% wall-clock regression between iterations
-/// indicates sccache miss or Docker cold-start overhead (EVA Round 2 finding,
-/// SCRUM gleaming-marble G10).
+/// Emitted at the end of each correction loop iteration. Use to monitor
+/// the performance gate — a significant wall-clock regression between
+/// iterations may indicate a compile-cache miss or sandbox cold-start.
 ///
 /// Wire format: `{"type":"iteration_metrics","build_id":"...","loop_index":0,...}`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

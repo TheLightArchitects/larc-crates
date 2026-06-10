@@ -6,11 +6,12 @@ use std::path::PathBuf;
 
 /// Handler for MCP tool requests.
 ///
-/// Implement this trait to handle incoming MCP tool calls.
-/// The production `McpServerLoop` dispatches requests to registered handlers.
+/// Implement this trait to handle incoming MCP tool calls. A server loop
+/// dispatches incoming JSON-RPC envelopes to registered handlers; this trait
+/// defines the contract the loop expects.
 ///
-/// This trait is not object-safe due to RPITIT return types.
-/// Use `SiblingHandler` for dynamic dispatch.
+/// This trait is not object-safe due to async-fn-in-trait return types.
+/// Use [`SiblingHandler`] when you need dynamic dispatch.
 #[async_trait]
 pub trait McpHandler: Send + Sync + 'static {
     /// Handle a raw JSON-RPC request.
