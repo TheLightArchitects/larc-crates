@@ -71,6 +71,7 @@
 
 mod archetype;
 mod contract;
+mod critic;
 mod error;
 mod events;
 mod evidence;
@@ -83,10 +84,14 @@ mod tool_descriptor;
 
 pub use archetype::Archetype;
 pub use contract::{Decision, DimensionScore, TaskContract, Verdict};
+pub use critic::{
+    CriticCalibration, CriticExemplar, CriticReview, FindingStatus, Vulnerability,
+    VulnerabilityKind,
+};
 pub use error::SquadError;
 pub use events::{
-    ConductorTickEvent, DecisionEntryDto, EscalationEvent, FixAgentIterationEvent,
-    MergeAgentStatusEvent,
+    AgentHeartbeatEvent, ConductorTickEvent, DecisionEntryDto, EscalationEvent,
+    FixAgentIterationEvent, IterationMetricsEvent, MergeAgentStatusEvent,
 };
 pub use evidence::EvidenceBundle;
 pub use gate_dimension::GateDimension;

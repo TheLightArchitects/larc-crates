@@ -205,3 +205,99 @@ impl DecisionEntryDto {
         }
     }
 }
+
+// ── AgentHeartbeat ────────────────────────────────────────────────────────────
+
+/// SSE payload: liveness signal from an agent during long-running operations.
+///
+/// Emitted every 10 seconds per agent. The orchestrator alerts if the gap
+/// between heartbeats exceeds 15 seconds (AYIN Round 2 finding, SCRUM
+/// gleaming-marble G12). Enables detection of silent agent stalls without
+/// requiring HITL intervention.
+///
+/// Wire format: `{"type":"agent_heartbeat","build_id":"...","agent_id":"...","stage":"..."}`
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct AgentHeartbeatEvent {
+    /// Build identifier.
+    pub build_id: String,
+    /// Agent identifier within the pool (e.g. `"researcher-0"`, `"tester-fix-1"`).
+    pub agent_id: String,
+    /// Current pipeline stage (e.g. `"research"`, `"code"`, `"review"`, `"test"`).
+    pub stage: String,
+    /// Current correction loop iteration, if the agent is in a fix cycle.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub loop_index: Option<u8>,
+}
+
+impl AgentHeartbeatEvent {
+    /// Create a new heartbeat event.
+    #[must_use]
+    pub fn new(build_id: String, agent_id: String, stage: String) -> Self {
+        Self {
+            build_id,
+            agent_id,
+            stage,
+            loop_index: None,
+        }
+    }
+}
+
+// ── IterationMetrics ──────────────────────────────────────────────────────────
+
+/// SSE payload: per-iteration performance metrics from the Tester agent.
+///
+/// Emitted at the end of each correction loop iteration. Feeds the AYIN
+/// [P] performance gate — a >5% wall-clock regression between iterations
+/// indicates sccache miss or Docker cold-start overhead (EVA Round 2 finding,
+/// SCRUM gleaming-marble G10).
+///
+/// Wire format: `{"type":"iteration_metrics","build_id":"...","loop_index":0,...}`
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct IterationMetricsEvent {
+    /// Build identifier.
+    pub build_id: String,
+    /// Zero-based wave index.
+    pub wave_index: u32,
+    /// Zero-indexed correction iteration (matches `SanitizedTrace::loop_index`).
+    pub loop_index: u8,
+    /// Time to compile in milliseconds (wall-clock from `cargo check` start).
+    pub compile_ms: u64,
+    /// Time to run tests in milliseconds (wall-clock from `cargo test` start).
+    pub test_ms: u64,
+    /// Whether the sccache layer served this compilation from cache.
+    ///
+    /// `false` on first iteration is expected; `false` on iterations 1–2
+    /// indicates sccache misconfiguration or cache key collision.
+    pub cache_hit: bool,
+    /// Change in aggregate test pass rate relative to the previous iteration.
+    ///
+    /// `None` for iteration 0 (no prior baseline). Positive = improvement.
+    /// Used by the orchestrator to detect convergence vs stall.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub score_delta: Option<f32>,
+}
+
+impl IterationMetricsEvent {
+    /// Create a new iteration metrics event.
+    #[must_use]
+    pub fn new(
+        build_id: String,
+        wave_index: u32,
+        loop_index: u8,
+        compile_ms: u64,
+        test_ms: u64,
+        cache_hit: bool,
+    ) -> Self {
+        Self {
+            build_id,
+            wave_index,
+            loop_index,
+            compile_ms,
+            test_ms,
+            cache_hit,
+            score_delta: None,
+        }
+    }
+}
