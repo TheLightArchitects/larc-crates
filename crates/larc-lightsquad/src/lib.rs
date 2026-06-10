@@ -80,6 +80,7 @@ mod pipeline;
 mod plan;
 mod projection;
 mod task;
+mod tdd;
 mod tool_descriptor;
 
 pub use archetype::Archetype;
@@ -97,11 +98,12 @@ pub use evidence::EvidenceBundle;
 pub use gate_dimension::GateDimension;
 pub use pipeline::{
     CompilerDiagnostic, ConstraintManifest, ContextVector, EnvironmentManifest, InterfaceStub,
-    SanitizedTrace,
+    SanitizeError, SanitizedTrace,
 };
 pub use plan::{PlanInput, TaskInput, WaveInput};
 pub use projection::Pillar;
 pub use task::{AgentStatus, BuildStatus, ContextTier, Task, TaskStatus, Tier, WaveStatus};
+pub use tdd::{EmptyAssertionsError, TestAssertion, TestAssertions};
 pub use tool_descriptor::ToolDescriptor;
 
 // ── Feature "dispatch": async delivery traits ─────────────────────────────

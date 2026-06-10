@@ -97,6 +97,15 @@ pub struct FixAgentIterationEvent {
     pub iteration: u32,
     /// One-line summary of the issue being fixed.
     pub issue_summary: String,
+    /// Structured evidence bundle for this correction iteration.
+    ///
+    /// `None` for legacy callers or when evidence assembly is not wired.
+    /// `Some` carries the full `EvidenceBundle` — compiler failures,
+    /// Reviewer vulnerabilities, AYIN span ID, and loop index.
+    /// Frontend consumers use this to display structured correction context
+    /// rather than relying on the plain-text `issue_summary` (Gap D closure).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub evidence: Option<crate::evidence::EvidenceBundle>,
 }
 
 impl FixAgentIterationEvent {
@@ -115,6 +124,7 @@ impl FixAgentIterationEvent {
             worker_slot,
             iteration,
             issue_summary,
+            evidence: None,
         }
     }
 }

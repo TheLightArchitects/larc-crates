@@ -6,6 +6,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use thiserror::Error;
 
 // ── Layer A: Environment Manifest ─────────────────────────────────────────────
 
@@ -258,7 +259,17 @@ impl CompilerDiagnostic {
 /// All compiler and test-runner output MUST be parsed through a structural
 /// allowlist before producing a `SanitizedTrace`. Raw strings must not be
 /// injected into the Coder agent's prompt (Security Guardrails §3.4.1).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+///
+/// # Constructing safely
+///
+/// Use [`SanitizedTrace::from_cargo_json`] to parse `cargo --message-format=json`
+/// NDJSON output. The parser applies the §3.4.1 allowlist — only fields in
+/// `{file, line, error_code, message ≤512 bytes}` survive. Malformed lines are
+/// silently dropped; only `SanitizeError::EmptyInput` is a hard error.
+///
+/// `SanitizedTrace::new()` and `SanitizedTrace::with_diagnostics()` are provided
+/// for callers who have already parsed their output — they do not re-validate.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct SanitizedTrace {
     /// Allowlist-parsed diagnostics — one entry per compiler error or test failure.
@@ -288,6 +299,154 @@ impl SanitizedTrace {
             loop_index,
         }
     }
+
+    /// Parse `cargo --message-format=json` NDJSON output into a sanitized trace.
+    ///
+    /// Handles two cargo output formats:
+    ///
+    /// 1. **Compiler messages** (`reason: "compiler-message"`) — from
+    ///    `cargo build/check --message-format=json`. Extracts `file_name`,
+    ///    `line_start`, `code.code`, and `message` from the primary span.
+    ///
+    /// 2. **Test failures** (`type: "test", event: "failed"`) — from
+    ///    `cargo test --message-format=json`. Extracts test name and `stdout`.
+    ///
+    /// All other NDJSON lines are silently dropped — structural allowlist
+    /// (Security Guardrails §3.4.1). ANSI escape sequences are stripped.
+    /// Messages are truncated to 512 bytes. Malformed JSON lines are skipped.
+    ///
+    /// # Errors
+    ///
+    /// Returns `SanitizeError::EmptyInput` if `input` is blank or whitespace-only.
+    pub fn from_cargo_json(input: &str, loop_index: u8) -> Result<Self, SanitizeError> {
+        if input.trim().is_empty() {
+            return Err(SanitizeError::EmptyInput);
+        }
+        let mut diagnostics = Vec::new();
+        for raw_line in input.lines() {
+            let line = raw_line.trim();
+            if line.is_empty() {
+                continue;
+            }
+            let Ok(json) = serde_json::from_str::<serde_json::Value>(line) else {
+                continue; // silently drop malformed lines — structural allowlist
+            };
+            if let Some(diag) = parse_compiler_message(&json) {
+                diagnostics.push(diag);
+            } else if let Some(diag) = parse_test_failure(&json) {
+                diagnostics.push(diag);
+            }
+        }
+        Ok(Self {
+            diagnostics,
+            loop_index,
+        })
+    }
+}
+
+/// Error returned by [`SanitizedTrace::from_cargo_json`].
+#[derive(Debug, Error, PartialEq)]
+pub enum SanitizeError {
+    /// The compiler output string was empty or contained only whitespace.
+    ///
+    /// This is a hard error — a blank output string cannot represent real
+    /// compiler feedback and likely indicates a pipeline configuration mistake.
+    #[error("compiler output is empty; expected cargo --message-format=json NDJSON")]
+    EmptyInput,
+}
+
+// ── Internal parsing helpers ──────────────────────────────────────────────────
+
+/// Extract a `CompilerDiagnostic` from a `cargo --message-format=json` compiler
+/// message line. Returns `None` for non-compiler-message lines.
+fn parse_compiler_message(json: &serde_json::Value) -> Option<CompilerDiagnostic> {
+    if json.get("reason")?.as_str()? != "compiler-message" {
+        return None;
+    }
+    let msg = json.get("message")?;
+    let error_code = msg
+        .get("code")
+        .and_then(|c| c.get("code"))
+        .and_then(|c| c.as_str())
+        .map(str::to_owned);
+    let raw_text = msg.get("message")?.as_str()?;
+    let text = truncate_to_bytes(&strip_ansi(raw_text), 512);
+    // Use the primary span for location; fall back to the first span.
+    let spans = msg.get("spans")?.as_array()?;
+    let span = spans
+        .iter()
+        .find(|s| {
+            s.get("is_primary")
+                .and_then(|p| p.as_bool())
+                .unwrap_or(false)
+        })
+        .or_else(|| spans.first())?;
+    let file = span.get("file_name")?.as_str()?.to_owned();
+    let line = span.get("line_start")?.as_u64()? as u32;
+    if file.is_empty() || line == 0 {
+        return None;
+    }
+    Some(CompilerDiagnostic {
+        file,
+        line,
+        error_code,
+        message: text,
+    })
+}
+
+/// Extract a `CompilerDiagnostic` from a `cargo test --message-format=json`
+/// test-failure line. Returns `None` for non-failure lines.
+fn parse_test_failure(json: &serde_json::Value) -> Option<CompilerDiagnostic> {
+    if json.get("type")?.as_str()? != "test" {
+        return None;
+    }
+    if json.get("event")?.as_str()? != "failed" {
+        return None;
+    }
+    let name = json.get("name")?.as_str()?;
+    let stdout = json.get("stdout").and_then(|s| s.as_str()).unwrap_or("");
+    let text = truncate_to_bytes(&strip_ansi(stdout), 512);
+    Some(CompilerDiagnostic {
+        file: format!("test::{name}"),
+        line: 0,
+        error_code: None,
+        message: if text.is_empty() {
+            format!("{name} failed")
+        } else {
+            text
+        },
+    })
+}
+
+/// Strip ANSI CSI escape sequences (`ESC [ ... <letter>`) from a string.
+pub(crate) fn strip_ansi(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut chars = s.chars().peekable();
+    while let Some(ch) = chars.next() {
+        if ch == '\x1b' && chars.peek() == Some(&'[') {
+            chars.next(); // consume '['
+            for c in chars.by_ref() {
+                if c.is_ascii_alphabetic() {
+                    break;
+                }
+            }
+        } else {
+            out.push(ch);
+        }
+    }
+    out
+}
+
+/// Truncate `s` to at most `max_bytes`, respecting UTF-8 char boundaries.
+pub(crate) fn truncate_to_bytes(s: &str, max_bytes: usize) -> String {
+    if s.len() <= max_bytes {
+        return s.to_owned();
+    }
+    let cut = (0..=max_bytes.min(s.len()))
+        .rev()
+        .find(|&i| s.is_char_boundary(i))
+        .unwrap_or(0);
+    s[..cut].to_owned()
 }
 
 #[cfg(test)]

@@ -70,7 +70,7 @@ pub enum VulnerabilityKind {
 ///
 /// Line-level attribution is load-bearing — prose-only findings are not
 /// actionable (CORSO Round 1 finding, SCRUM gleaming-marble).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct Vulnerability {
     /// Line number where the issue was identified (1-indexed).
@@ -85,6 +85,21 @@ pub struct Vulnerability {
     /// Only `Actioned` and `Waived` findings are eligible for SOUL helix routing.
     #[serde(default)]
     pub status: FindingStatus,
+    /// Number of times this finding pattern appeared in prior pipeline runs.
+    ///
+    /// `0` = first occurrence (Critic just surfaced it). Set by the orchestrator
+    /// after querying the SOUL helix for recurrence history. Findings with
+    /// `recurrence >= 2 && status == FindingStatus::Bypassed` are auto-promoted
+    /// to the helix at significance ≥6.0 (SOUL G11 finding, SCRUM gleaming-marble).
+    #[serde(default)]
+    pub recurrence: u32,
+    /// UUID v4 string of the pipeline run that produced this finding.
+    ///
+    /// Links the finding to its originating run for cross-run recurrence
+    /// tracking in the SOUL knowledge graph. `None` when the Critic creates
+    /// the finding; set by the orchestrator before helix routing.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pipeline_run_id: Option<String>,
 }
 
 impl Vulnerability {
@@ -96,6 +111,8 @@ impl Vulnerability {
             kind,
             detail,
             status: FindingStatus::Pending,
+            recurrence: 0,
+            pipeline_run_id: None,
         }
     }
 }
@@ -190,18 +207,19 @@ impl CriticCalibration {
 /// 2. Are there resource leaks (unclosed sockets, un-dropped locks)?
 /// 3. Does the code handle empty, null, or out-of-bounds collection access?
 ///
-/// The `rejection_count_this_session` field enables QUANTUM's calibration
-/// protocol — a Critic that never rejects is indistinguishable from no Critic.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// The `rejection_count_this_session` and `total_reviews_this_session` fields
+/// enable QUANTUM's calibration protocol — a Critic that never rejects is
+/// indistinguishable from no Critic. The orchestrator populates both counters
+/// and computes `calibration_alert` by comparing the rejection rate against
+/// `CriticCalibration::rejection_baseline_min`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct CriticReview {
     /// Whether the Critic approves this code for the next pipeline stage.
     ///
-    /// `false` → findings returned to the Coder agent via [`SanitizedTrace`]
-    /// for correction. `true` with non-empty `vulnerabilities` is valid —
-    /// warnings may be recorded even on approval.
-    ///
-    /// [`SanitizedTrace`]: crate::pipeline::SanitizedTrace
+    /// `false` → findings returned to the Coder agent via the correction loop.
+    /// `true` with non-empty `vulnerabilities` is valid — warnings may be
+    /// recorded even on approval.
     pub approved: bool,
     /// Identified vulnerabilities and quality issues.
     ///
@@ -210,10 +228,25 @@ pub struct CriticReview {
     pub vulnerabilities: Vec<Vulnerability>,
     /// Number of reviews rejected in this pipeline session.
     ///
-    /// Incremented by the orchestrator. Compared against
-    /// `CriticCalibration::rejection_baseline_min` to detect a non-functioning Critic.
+    /// Incremented by the orchestrator. Combined with `total_reviews_this_session`
+    /// to compute the rejection rate for calibration checking.
     #[serde(default)]
     pub rejection_count_this_session: u32,
+    /// Total number of code reviews evaluated in this pipeline session.
+    ///
+    /// Maintained by the orchestrator and injected into each `CriticReview`.
+    /// Denominator for the rejection rate: `rejection_count / total_reviews`.
+    #[serde(default)]
+    pub total_reviews_this_session: u32,
+    /// Calibration warning, if the Critic's rejection rate is below baseline.
+    ///
+    /// `None` = calibration satisfied (or `CriticCalibration` not wired).
+    /// `Some(msg)` = the rejection rate fell below
+    /// `CriticCalibration::rejection_baseline_min`; the pipeline continues but
+    /// the operator is notified via the build dashboard. A Critic that never
+    /// rejects is indistinguishable from no Critic (QUANTUM Round 2 finding).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub calibration_alert: Option<String>,
 }
 
 impl CriticReview {
@@ -224,6 +257,8 @@ impl CriticReview {
             approved: true,
             vulnerabilities: Vec::new(),
             rejection_count_this_session: 0,
+            total_reviews_this_session: 0,
+            calibration_alert: None,
         }
     }
 
@@ -234,6 +269,36 @@ impl CriticReview {
             approved: false,
             vulnerabilities,
             rejection_count_this_session: 0,
+            total_reviews_this_session: 0,
+            calibration_alert: None,
+        }
+    }
+
+    /// Evaluate calibration and set `calibration_alert` if the rejection rate
+    /// is below `CriticCalibration::rejection_baseline_min`.
+    ///
+    /// Called by the orchestrator after incrementing session counters. Skipped
+    /// when `total_reviews_this_session == 0` or `rejection_baseline_min <= 0.0`.
+    /// Returns `true` if calibration passes, `false` if an alert was set.
+    pub fn check_calibration(&mut self, calibration: &CriticCalibration) -> bool {
+        if self.total_reviews_this_session == 0 || calibration.rejection_baseline_min <= 0.0 {
+            return true;
+        }
+        let rate =
+            self.rejection_count_this_session as f32 / self.total_reviews_this_session as f32;
+        if rate < calibration.rejection_baseline_min {
+            self.calibration_alert = Some(format!(
+                "Critic rejection rate {:.1}% is below baseline {:.1}% \
+                 ({}/{} reviews rejected). Critic may not be functioning correctly.",
+                rate * 100.0,
+                calibration.rejection_baseline_min * 100.0,
+                self.rejection_count_this_session,
+                self.total_reviews_this_session,
+            ));
+            false
+        } else {
+            self.calibration_alert = None;
+            true
         }
     }
 }

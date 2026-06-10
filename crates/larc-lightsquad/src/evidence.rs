@@ -1,5 +1,6 @@
 //! Correction-loop evidence bundle — Rust companion to §57.2b `evidence-bundle.json`.
 
+use crate::critic::Vulnerability;
 use crate::pipeline::CompilerDiagnostic;
 use serde::{Deserialize, Serialize};
 
@@ -23,7 +24,8 @@ use serde::{Deserialize, Serialize};
 /// | AYIN span summary | `ayin_span_id` | UUID string; fetch detail via `:3742/api/spans/{id}` |
 /// | *(added)* | `cargo_test_failures` | allowlist-parsed cargo test errors (§3.4.1) |
 /// | *(added)* | `loop_index` | 0-indexed iteration for Coder aggression calibration |
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// | *(added)* | `critic_vulnerabilities` | Reviewer→Coder findings (Gap A closure) |
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct EvidenceBundle {
     /// Name of the failing test.
@@ -52,6 +54,14 @@ pub struct EvidenceBundle {
     /// Last ≤10 SSE frames from the test session (per §57.2b).
     #[serde(default)]
     pub last_sse_frames: Vec<String>,
+    /// Reviewer-identified vulnerabilities for this correction iteration.
+    ///
+    /// Populated when the Critic rejected in the same loop iteration.
+    /// Empty when the correction was triggered by compiler/test failures only.
+    /// Closes the Reviewer→Coder feedback path — vulnerabilities and compiler
+    /// failures share a single correction envelope (Gap A, SCRUM gleaming-marble).
+    #[serde(default)]
+    pub critic_vulnerabilities: Vec<Vulnerability>,
 }
 
 impl EvidenceBundle {
@@ -66,6 +76,7 @@ impl EvidenceBundle {
             ayin_span_id: None,
             artifact_paths: Vec::new(),
             last_sse_frames: Vec::new(),
+            critic_vulnerabilities: Vec::new(),
         }
     }
 }
