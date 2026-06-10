@@ -8,7 +8,7 @@ description = "Knowledge graph + retrieval traits for the Light Architects SOUL 
 keywords = ["knowledge-graph", "retrieval", "neo4j", "embedding", "memory"]
 categories = ["database", "data-structures", "science"]
 readme = "../../../README.md"
-homepage = "https://github.com/TheLightArchitects/la-crates"
+homepage = "https://github.com/TheLightArchitects/larc-crates"
 
 [features]
 default = []
