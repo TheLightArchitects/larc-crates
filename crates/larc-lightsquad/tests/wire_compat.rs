@@ -157,7 +157,7 @@ fn context_tier_string_to_u8_round_trips() {
     assert_eq!(ContextTier::tier_to_string(3), None);
 }
 
-// ── GateDimension (D-5 resolved — SDK re-exports from this crate) ──────────────
+// ── GateDimension ─────────────────────────────────────────────────────────────
 
 #[test]
 fn gate_dimension_custom_variant_serializes() {

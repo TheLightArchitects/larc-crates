@@ -1,7 +1,6 @@
-//! # la-soulvault
+//! # larc-soulvault
 //!
-//! Knowledge graph type vocabulary, backend traits, and optional production
-//! vault backend for the Light Architects SOUL engine.
+//! Knowledge graph type vocabulary and backend traits. Bring your own backend.
 //!
 //! ## Default (no features) — zero async overhead
 //!
@@ -9,7 +8,7 @@
 //!
 //! | Tier | Types | Async? |
 //! |------|-------|--------|
-//! | **Data** | [`Step`], [`Helix`], [`Strand`], [`HelixLink`], [`SharedExperience`] | No |
+//! | **Data** | [`Step`], [`Helix`], [`Strand`], [`HelixLink`], [`SharedExperience`], [`ResearchReport`] | No |
 //! | **Model** | [`HelixOrderingMode`], [`Tier`], [`SoulvaultError`] | No |
 //!
 //! ## Features
@@ -19,26 +18,15 @@
 //! | `embedding` | [`EmbeddingBackend`] | Implement your own embedding backend |
 //! | `graph` | [`GraphBackend`] | Implement your own graph backend |
 //! | `promotion` | [`PromotionBackend`] | Implement your own consolidation pipeline |
-//! | `engine` | [`HelixBackend`], [`SoulClient`], retrieval types | Full orchestration layer — implies all three above |
+//! | `engine` | `HelixBackend`, `SoulClient`, retrieval types | Full orchestration layer — implies all three above |
 //! | `embedding-cache` | [`CachedEmbeddingProvider`] | Moka TTL cache wrapping any `EmbeddingBackend` |
-//! | `vault` | [`vault`] module — [`vault::connect`], [`vault::connect_from_env`] | Production Neo4j backend via the private `lightarchitects` SDK |
 //!
 //! ## Quick start
 //!
-//! **Build your own backend** (open source, `engine` feature):
-//! ```toml
-//! la-soulvault = { git = "...", features = ["engine"] }
-//! ```
+//! Implement the trait that matches your backend, then plug into the engine:
 //!
-//! **Use the production vault** (`vault` feature, requires SDK access):
 //! ```toml
-//! la-soulvault = { git = "...", features = ["vault"] }
-//! lightarchitects = { path = "...", optional = false }
-//! ```
-//! ```rust,ignore
-//! let client = larc_soulvault::vault::connect_from_env().await?;
-//! client.upsert_step(step).await?;
-//! let results = client.retrieve_adaptive("helix-id", "my query", 10).await?;
+//! larc-soulvault = { version = "0.1", features = ["engine"] }
 //! ```
 
 // ── Always-available: data types + model types (zero async) ─────────────────
@@ -99,7 +87,3 @@ pub use helix::{HelixBackend, select_mode};
 #[cfg(feature = "engine")]
 pub use retrieval::{RetrievalMode, RetrievalResult, SignalWeights};
 
-// ── Feature `vault` (implies engine + lightarchitects SDK) ───────────────────
-
-#[cfg(feature = "vault")]
-pub mod vault;

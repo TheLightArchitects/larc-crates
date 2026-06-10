@@ -54,8 +54,8 @@ impl TurnContext {
 /// # Implementors
 ///
 /// - [`TurnTracker`] — pure in-process state machine (zero I/O, zero async).
-/// - `lightarchitects::ayin::SpanContext` — tokio task-local wrapper used by
-///   the gateway and SDK transports.
+/// - Async wrappers may use task-local storage (e.g., `tokio::task_local!`)
+///   to thread the current [`TurnContext`] through awaited tasks.
 ///
 /// # Example
 ///
@@ -235,10 +235,9 @@ mod tests {
     #[test]
     fn child_context_none_outside_turn() {
         let t = TurnTracker::new("sess-4");
-        assert!(
-            t.child_context(Actor::claude(), "assistant.response")
-                .is_none()
-        );
+        assert!(t
+            .child_context(Actor::claude(), "assistant.response")
+            .is_none());
     }
 
     #[test]

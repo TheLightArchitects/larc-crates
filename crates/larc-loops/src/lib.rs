@@ -1,22 +1,21 @@
-//! # la-loops
+//! # larc-loops
 //!
-//! Agentic loop convergence traits for the Light Architects platform.
+//! Agentic loop convergence traits — strategy-agnostic interfaces for deciding
+//! when to halt, continue, or escalate an agentic execution loop.
 //!
-//! Provides [`ConvergenceResult`] and six strategy-agnostic traits that loop
-//! implementations use to decide when to halt, continue, or escalate. The SDK
-//! re-exports these via `lightarchitects::agent::loops::convergence`; concrete
-//! strategy implementations live in `lightarchitects::agent::loops`.
+//! Provides [`ConvergenceResult`] and six convergence strategy traits. Implement
+//! whichever fits your loop topology; compose multiple traits for hybrid strategies.
 //!
-//! ## Trait map
+//! ## Traits
 //!
-//! | Trait | Strategy | Topology |
-//! |-------|----------|----------|
-//! | [`BlastScore`] | `BcraStrategy` | Compound risk convergence (FAIR/Bowtie) |
-//! | [`ConvergenceGate`] | `GateStrategy` | Gate-by-gate with phase-back |
-//! | [`NPassVerifier`] | `MultiPassVerifyStrategy` | N independent verification rounds |
-//! | [`QueueDrain`] | `DrainStrategy` | Bounded queue processing |
-//! | [`InterestDecay`] | (future) | Simulated annealing cooling schedules |
-//! | [`IntervalWatch`] | (future) | Classic interval polling |
+//! | Trait | Topology |
+//! |-------|----------|
+//! | [`BlastScore`] | Compound risk/score threshold |
+//! | [`ConvergenceGate`] | Gate-by-gate with phase-back |
+//! | [`NPassVerifier`] | N independent verification rounds |
+//! | [`QueueDrain`] | Bounded queue exhaustion |
+//! | [`InterestDecay`] | Simulated annealing cooling |
+//! | [`IntervalWatch`] | Interval polling with deadline |
 //!
 //! ## Quick start
 //!
@@ -66,10 +65,11 @@ impl ConvergenceResult {
 
 // ── BlastScore ────────────────────────────────────────────────────────────────
 
-/// Convergence via compound risk scoring (FAIR/Bowtie blast-score model).
+/// Convergence via compound risk scoring.
 ///
-/// Used by `BcraStrategy` to determine when accumulated evidence reaches a
-/// sufficient confidence level to halt or advance the BCRA loop.
+/// The loop converges when accumulated evidence or a normalised risk estimate
+/// crosses a caller-defined threshold. Suitable for FAIR/Bowtie-style blast
+/// score models where confidence accumulates incrementally.
 pub trait BlastScore: Send + Sync {
     /// Evaluate whether the current blast score satisfies the convergence threshold.
     ///
@@ -82,8 +82,9 @@ pub trait BlastScore: Send + Sync {
 
 /// Gate-by-gate convergence with phase-back capability.
 ///
-/// Used by `GateStrategy` — each gate must pass before the next; a failing
-/// gate triggers a phase-back to the gate that owns the failure.
+/// Each gate must pass before the next can be evaluated. A failing gate
+/// returns `Blocked` with the owning gate label, allowing the caller to
+/// phase-back to the correct remediation point.
 pub trait ConvergenceGate: Send + Sync {
     /// Evaluate a single gate pass.
     ///
@@ -96,24 +97,25 @@ pub trait ConvergenceGate: Send + Sync {
 
 /// Convergence via N independent verification rounds.
 ///
-/// Used by `MultiPassVerifyStrategy` — the loop converges when `required_passes`
-/// rounds all agree (or when a majority threshold is reached under a configurable
-/// policy).
+/// The loop converges when `required_passes` rounds all succeed (unanimous),
+/// or when a majority threshold is reached under a configurable policy.
+/// Suitable for adversarial verification where a single pass may be unreliable.
 pub trait NPassVerifier: Send + Sync {
     /// Record the result of pass `pass_index` and check whether convergence is reached.
     ///
     /// `pass_index` is 0-based. `passed` indicates whether this pass succeeded.
     /// `required_passes` is the total number of passes required for convergence.
     fn record_pass(&self, pass_index: u32, passed: bool, required_passes: u32)
-    -> ConvergenceResult;
+        -> ConvergenceResult;
 }
 
 // ── QueueDrain ────────────────────────────────────────────────────────────────
 
 /// Convergence via bounded queue exhaustion.
 ///
-/// Used by `DrainStrategy` — the loop converges when the processing queue is
-/// empty (or falls below a residual threshold).
+/// The loop converges when the processing queue is empty or falls below a
+/// caller-defined residual threshold. Suitable for work-stealing or
+/// fan-out loops that drain a finite item set.
 pub trait QueueDrain: Send + Sync {
     /// Check whether the queue has drained to the point of convergence.
     ///

@@ -20,7 +20,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 async-trait = "0.1"
-larc-ayinspan = { path = "../larc-ayinspan", optional = true }
+larc-ayinspan = { workspace = true, optional = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt"] }

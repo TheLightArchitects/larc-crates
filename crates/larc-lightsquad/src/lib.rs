@@ -1,15 +1,15 @@
-//! # la-lightsquad
+//! # larc-lightsquad
 //!
 //! Structured Delivery Protocol — archetype framework, delivery vocabulary,
-//! and executor traits for autonomous squad orchestration.
+//! pipeline contract types, and executor traits for autonomous squad orchestration.
 //!
-//! This crate defines the **protocol and vocabulary** for structured software
-//! delivery. The private `lightarchitects-sdk` provides the engine that
-//! executes it.
+//! Provides the **vocabulary** for multi-agent software delivery systems: tasks,
+//! waves, gate dimensions, archetypes, review verdicts, evidence bundles,
+//! context vectors, and SSE event payloads. Bring your own engine.
 //!
-//! ## Default (no features) — zero async, pure data + Archetype trait
+//! ## Default (no features) — zero async, pure data + [`Archetype`] trait
 //!
-//! Import the vocabulary and declare archetypes without pulling in tokio:
+//! Import the vocabulary and declare archetypes without pulling in an async runtime:
 //!
 //! ```rust
 //! use larc_lightsquad::{Archetype, GateDimension, ToolDescriptor};
@@ -29,43 +29,19 @@
 //!
 //! ## Feature `dispatch` — async delivery traits
 //!
-//! Enables `Executor`, `ReviewGate`, `WaveDispatcher`, and `WorktreeManager`.
+//! Enables [`Executor`], [`ReviewGate`], [`WaveDispatcher`], and [`WorktreeManager`].
+//! Pulls in `tokio` and `async-trait`.
 //!
-//! ## Architecture
+//! ## Pipeline contract types
 //!
-//! ```text
-//! la-lightsquad (open — protocol + vocabulary + archetype shapes)
-//!        │
-//!        │ implements
-//!        ▼
-//! lightarchitects-sdk (private — engine + canon + implementations)
-//! ```
+//! For supervised multi-agent pipelines (Researcher → Coder → Reviewer → Tester):
 //!
-//! The archetype shapes (SecurityArchetype, CanonKeeperArchetype, etc.)
-//! live in documentation as examples, not in the crate. Anything in the
-//! crate at v0.1.0 is a semver promise. Fictional doc examples are not.
-//!
-//! ## What stays in the SDK (the moat)
-//!
-//! - The Coordinator (7-slot worker pool, wave dispatch)
-//! - The Decision Pipeline (Canon → Northstar → LightArchitect → User)
-//! - The personality engine (prompt construction per archetype)
-//! - 4-signal RRF retrieval
-//! - ReviewGate loop (MAX_GATE_ITERATIONS = 3)
-//! - Context tier token budgeting
-//! - HMAC task verification
-//! - CORSO's 7-pillar methodology, EVA's consciousness model, etc.
-//!
-//! ## Pre-Publish Migration Debt (v0.1.0 gate)
-//!
-//! | # | Item | Status | Resolution |
-//! |---|------|--------|------------|
-//! | D-1 | `EscalationEvent.worker_slot` — required `u8` in Rust, optional in TS | **RESOLVED** | `Option<u8>` with `#[serde(default)]` |
-//! | D-2 | `EscalationEvent.canon_ref` — present in TS, absent in Rust | **RESOLVED** | `Option<String>` with `#[serde(default, skip_serializing_if)]` |
-//! | D-3 | `DecisionEntryDto` — TS DTO shape vs SDK `HashChain::DecisionEntry` internal | **RESOLVED** | Promoted to `src/events.rs`; crypto fields never exposed |
-//! | D-4 | `ContextTier.tier` — `String` in SDK (`"T1"/"T2"/"T3"`), `u8` in this crate | **RESOLVED** | `u8` canonical; `tier_from_string`/`tier_to_string` bridge methods |
-//! | D-5 | `GateDimension` duplication — SDK has its own 10-variant copy without `Custom` | **RESOLVED** | SDK re-exports `larc_lightsquad::GateDimension` |
-//! | D-6 | SSE envelope strategy — TS sends `"type"` inline; Rust structs omit it | **RESOLVED** | No `deny_unknown_fields`; serde silently ignores unknown fields (documented in `events.rs`) |
+//! - [`ContextVector`] — orchestrator-assembled context (env manifest, interface stubs,
+//!   constraint manifest)
+//! - [`CriticReview`] + [`Vulnerability`] — structured review output with calibration baseline
+//! - [`EvidenceBundle`] — correction loop input with allowlist-parsed diagnostics
+//! - [`SanitizedTrace`] + [`CompilerDiagnostic`] — safe Tester→Coder feedback wire
+//! - [`TestAssertions`] — Test-Driven Generation stubs (non-empty invariant)
 
 // ── Always available: vocabulary + Archetype trait (zero async) ────────────
 

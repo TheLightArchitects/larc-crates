@@ -1,12 +1,13 @@
-//! # la-ayinspan
+//! # larc-ayinspan
 //!
-//! Observability span types for the Light Architects platform.
+//! Observability span types — `TraceSpan`, `Actor`, `TraceOutcome`, `TraceContext`
+//! (builder), and W3C traceparent propagation. Zero runtime dependencies in the
+//! default feature set (no tokio, no async runtime).
 //!
-//! Provides [`TraceSpan`], [`Actor`], [`TraceOutcome`], [`TraceContext`] (builder),
-//! and W3C traceparent propagation — with zero runtime dependencies (no tokio, no axum).
-//!
-//! This is the canonical source for AYIN span types. The SDK re-exports these;
-//! AYIN-DEV and the gateway both consume this crate directly.
+//! Designed for use as the shared vocabulary between agentic systems and their
+//! observability backends. Implement [`emit::SpanEmit`] to deliver spans to your
+//! preferred sink; implement [`turn::TurnTracking`] to plug span hierarchies into
+//! your own session/turn lifecycle.
 //!
 //! ## Quick start
 //!

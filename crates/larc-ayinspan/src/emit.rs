@@ -12,15 +12,15 @@ use crate::span::TraceSpan;
 ///
 /// | Implementor | Backend |
 /// |-------------|---------|
-/// | `lightarchitects::ayin::FileSpanEmitter` | atomic JSON file (`~/.../traces/<actor>/<date>/`) |
-/// | `lightarchitects::ayin::HttpSpanEmitter` | `POST /ingest/span` on AYIN HTTP server |
-/// | `NullSpanEmitter` | `/dev/null` — useful for tests and feature-off builds |
+/// | File emitter (consumer-provided) | atomic JSON file per actor/date |
+/// | HTTP emitter (consumer-provided) | `POST /ingest/span` on an HTTP server |
+/// | [`NullSpanEmitter`] | `/dev/null` — useful for tests and feature-off builds |
 ///
 /// # Object safety
 ///
 /// `SpanEmit` is object-safe: `Box<dyn SpanEmit<Error = …>>` works, but
-/// callers typically erase the error with `Box<dyn std::error::Error>`.
-/// The SDK's `DynSpanEmitter` type alias does this erasure.
+/// callers typically erase the error with a type alias like
+/// `type DynSpanEmitter = Box<dyn SpanEmit<Error = Box<dyn std::error::Error>>>`.
 ///
 /// # Example
 ///
