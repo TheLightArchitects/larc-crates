@@ -1,0 +1,44 @@
+[package]
+name = "larc-soulvault"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Knowledge graph + retrieval traits for the Light Architects SOUL engine — with optional production vault backend"
+keywords = ["knowledge-graph", "retrieval", "neo4j", "embedding", "memory"]
+categories = ["database", "data-structures", "science"]
+readme = "../../../README.md"
+homepage = "https://github.com/TheLightArchitects/la-crates"
+
+[features]
+default = []
+# Swap the embedding model — fastembed, OpenAI, Ollama, etc.
+embedding = ["dep:async-trait"]
+# Swap the graph store — Neo4j, Memgraph, in-memory, etc.
+graph = ["dep:async-trait"]
+# Swap the consolidation pipeline — custom promotion + tier management.
+promotion = ["dep:async-trait"]
+# Full orchestration layer: HelixBackend + SoulClient + 4-signal retrieval types.
+# Implies all three sub-traits.
+engine = ["embedding", "graph", "promotion"]
+# Moka-backed TTL cache wrapping any EmbeddingBackend.
+# Adds CachedEmbeddingProvider — pull in when you want transparent embedding caching.
+# Implies `embedding`.
+embedding-cache = ["embedding", "dep:moka", "dep:sha2"]
+# Production vault backend — connects to the private lightarchitects SDK.
+# Implies `engine`. Requires the lightarchitects crate to be available
+# (it is private; add it as a path or git dep in your workspace).
+vault = ["engine", "dep:lightarchitects", "dep:chrono"]
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { version = "0.1", optional = true }
+moka = { version = "0.12", features = ["future"], optional = true }
+sha2 = { version = "0.10", optional = true }
+chrono = { version = "0.4", features = ["serde"], optional = true }
+lightarchitects = { path = "../../../../lightarchitects-sdk/lightarchitects", optional = true, default-features = false }
+
+[dev-dependencies]
+tokio = { workspace = true }

@@ -1,12 +1,12 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/la-soulvault",
-    "crates/la-benchmark",
-    "crates/la-gateway",
-    "crates/la-ayinspan",
-    "crates/la-lightsquad",
-    "crates/la-loops",
+    "crates/larc-soulvault",
+    "crates/larc-benchmark",
+    "crates/larc-gateway",
+    "crates/larc-ayinspan",
+    "crates/larc-lightsquad",
+    "crates/larc-loops",
 ]
 
 [workspace.package]
@@ -18,12 +18,12 @@ rust-version = "1.85"
 
 [workspace.dependencies]
 # Internal
-la-soulvault = { path = "crates/la-soulvault" }
-la-benchmark = { path = "crates/la-benchmark" }
-la-gateway = { path = "crates/la-gateway" }
-la-ayinspan = { path = "crates/la-ayinspan" }
-la-lightsquad = { path = "crates/la-lightsquad" }
-la-loops = { path = "crates/la-loops" }
+larc-soulvault = { path = "crates/larc-soulvault" }
+larc-benchmark = { path = "crates/larc-benchmark" }
+larc-gateway = { path = "crates/larc-gateway" }
+larc-ayinspan = { path = "crates/larc-ayinspan" }
+larc-lightsquad = { path = "crates/larc-lightsquad" }
+larc-loops = { path = "crates/larc-loops" }
 
 # Shared
 serde = { version = "1", features = ["derive"] }

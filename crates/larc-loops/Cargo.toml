@@ -1,0 +1,13 @@
+[package]
+name = "larc-loops"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Agentic loop convergence traits for the Light Architects platform — ConvergenceResult, BlastScore, ConvergenceGate, NPassVerifier, QueueDrain, InterestDecay, IntervalWatch"
+keywords = ["agent", "loop", "convergence", "strategy", "lightarchitects"]
+categories = ["asynchronous", "algorithms"]
+
+[dependencies]
+
+[dev-dependencies]
