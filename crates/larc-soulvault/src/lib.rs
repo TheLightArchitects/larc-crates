@@ -45,11 +45,13 @@
 
 mod error;
 mod ordering;
+mod research_report;
 mod tier;
 mod types;
 
 pub use error::SoulvaultError;
 pub use ordering::HelixOrderingMode;
+pub use research_report::{ResearchReport, VerifiedSnippet};
 pub use tier::Tier;
 pub use types::{Helix, HelixLink, SharedExperience, Step, Strand};
 

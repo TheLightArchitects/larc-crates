@@ -169,6 +169,13 @@ pub struct Task {
     pub prompt: String,
     /// Current status.
     pub status: TaskStatus,
+    /// Trace identifier linking this task to its originating pipeline span.
+    ///
+    /// Set by the orchestrator at pipeline entry and threaded through every
+    /// agent handoff. Format: UUID v4 string. `None` for tasks created
+    /// outside a traced pipeline.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub trace_id: Option<String>,
 }
 
 impl Task {
@@ -184,6 +191,7 @@ impl Task {
             file_ownership: Vec::new(),
             concurrency_safe: false,
             context_tiers: Vec::new(),
+            trace_id: None,
         }
     }
 
