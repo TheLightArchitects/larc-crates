@@ -7,6 +7,7 @@ members = [
     "crates/larc-ayinspan",
     "crates/larc-lightsquad",
     "crates/larc-loops",
+    "crates/larc-mesh-types",
 ]
 
 [workspace.package]
@@ -24,6 +25,7 @@ larc-gateway = { path = "crates/larc-gateway", version = "0.1.1" }
 larc-ayinspan = { path = "crates/larc-ayinspan", version = "0.1.1" }
 larc-lightsquad = { path = "crates/larc-lightsquad", version = "0.1.1" }
 larc-loops = { path = "crates/larc-loops", version = "0.1.1" }
+larc-mesh-types = { path = "crates/larc-mesh-types", version = "0.1.1" }
 
 # Shared
 serde = { version = "1", features = ["derive"] }

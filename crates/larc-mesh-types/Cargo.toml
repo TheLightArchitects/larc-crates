@@ -1,0 +1,19 @@
+[package]
+name = "larc-mesh-types"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Mesh identity + scope types — shared vocabulary for multi-agent collective memory"
+keywords = ["mesh", "agent", "identity", "scope", "memory"]
+categories = ["data-structures"]
+
+[features]
+default = []
+
+[dependencies]
+serde = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
