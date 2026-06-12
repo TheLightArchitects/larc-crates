@@ -41,7 +41,7 @@ async fn main() -> Result<()> {
         .route("/v1/auth/me", get(handlers::users::me))
         .route("/v1/keys", get(handlers::keys::list))
         .route("/v1/keys", post(handlers::keys::create))
-        .route("/v1/keys/:id", delete(handlers::keys::revoke))
+        .route("/v1/keys/{id}", delete(handlers::keys::revoke))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             handlers::users::require_auth,
