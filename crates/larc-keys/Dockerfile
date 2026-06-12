@@ -1,4 +1,4 @@
-FROM rust:1.87-bookworm AS builder
+FROM rust:1.88-bookworm AS builder
 WORKDIR /build
 
 # GCC + pkg-config required: rusqlite --features bundled compiles SQLite from C source
