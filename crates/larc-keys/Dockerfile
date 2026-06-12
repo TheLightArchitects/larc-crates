@@ -1,9 +1,9 @@
 FROM rust:1.87-slim AS builder
 WORKDIR /build
 
-# Install build deps for rusqlite (bundled sqlite needs cc)
+# GCC + pkg-config required: rusqlite --features bundled compiles SQLite from C source
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
+    build-essential pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
 
 # Copy source
 COPY crates/larc-keys/Cargo.toml crates/larc-keys/
