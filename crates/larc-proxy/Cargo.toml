@@ -1,0 +1,33 @@
+[package]
+name        = "larc-proxy"
+version.workspace    = true
+edition.workspace    = true
+license.workspace    = true
+repository.workspace = true
+description = "Light Architects MCP proxy — thin client that forwards Claude Code tool calls to api.lightarchitects.ai"
+keywords    = ["mcp", "claude", "ai", "proxy", "lightarchitects"]
+categories  = ["command-line-utilities", "network-programming"]
+readme      = "README.md"
+
+[[bin]]
+name = "larc-proxy"
+path = "src/main.rs"
+
+[dependencies]
+rmcp               = { version = "0.10", features = ["server", "transport-io"] }
+reqwest            = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+tokio              = { workspace = true }
+serde              = { workspace = true }
+serde_json         = { workspace = true }
+anyhow             = { version = "1" }
+thiserror          = { workspace = true }
+tracing            = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[lints.clippy]
+pedantic            = { level = "deny", priority = -1 }
+must_use_candidate  = "allow"
+module_name_repetitions = "allow"
+unwrap_used         = "deny"
+expect_used         = "deny"
+panic               = "deny"

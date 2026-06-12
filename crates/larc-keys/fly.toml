@@ -1,0 +1,36 @@
+app = "larc-keys"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+  build_context = "../../"
+
+[env]
+  LARC_DATABASE_PATH = "/data/larc.db"
+  LARC_ENV           = "production"
+  LARC_HOST          = "0.0.0.0"
+  LARC_PORT          = "3800"
+  RUST_LOG           = "info"
+
+[[mounts]]
+  source      = "larc_keys_data"
+  destination = "/data"
+  initial_size = "1gb"
+
+[http_service]
+  internal_port        = 3800
+  force_https          = true
+  auto_stop_machines   = false
+  auto_start_machines  = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval     = "15s"
+    timeout      = "5s"
+    grace_period = "10s"
+    method       = "GET"
+    path         = "/health"
+
+[[vm]]
+  size   = "shared-cpu-1x"
+  memory = "256mb"

@@ -7,6 +7,8 @@ members = [
     "crates/larc-ayinspan",
     "crates/larc-lightsquad",
     "crates/larc-loops",
+    "crates/larc-proxy",
+    "crates/larc-keys",
 ]
 
 [workspace.package]
