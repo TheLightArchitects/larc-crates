@@ -1,10 +1,15 @@
 FROM rust:1.87-slim AS builder
 WORKDIR /build
 
-# Copy only what larc-keys needs — minimal workspace to avoid broken sibling deps
-COPY crates/larc-keys/Cargo.toml crates/larc-keys/
+# Install build deps for rusqlite (bundled sqlite needs cc)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
 
-# Synthesise a minimal workspace root
+# Copy source
+COPY crates/larc-keys/Cargo.toml crates/larc-keys/
+COPY crates/larc-keys/src        crates/larc-keys/src/
+
+# Synthesise a minimal workspace root (avoids broken sibling crates)
 RUN cat > Cargo.toml <<'TOML'
 [workspace]
 resolver = "2"
@@ -33,13 +38,7 @@ sha2               = "0.10"
 rand               = "0.8"
 TOML
 
-# Cache dependencies with a stub binary
-RUN mkdir -p crates/larc-keys/src && echo 'fn main(){}' > crates/larc-keys/src/main.rs
-RUN cargo build --release -p larc-keys 2>&1 || true
-
-# Real source
-COPY crates/larc-keys/src crates/larc-keys/src/
-RUN touch crates/larc-keys/src/main.rs && cargo build --release -p larc-keys
+RUN cargo build --release -p larc-keys
 
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
