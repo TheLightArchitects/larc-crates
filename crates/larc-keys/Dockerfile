@@ -1,4 +1,4 @@
-FROM rust:1.87-slim AS builder
+FROM rust:1.87-bookworm AS builder
 WORKDIR /build
 
 # GCC + pkg-config required: rusqlite --features bundled compiles SQLite from C source
@@ -38,7 +38,7 @@ sha2               = "0.10"
 rand               = "0.8"
 TOML
 
-RUN cargo build --release -p larc-keys
+RUN cargo build --release -p larc-keys -v 2>&1
 
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
