@@ -1,30 +1,52 @@
 FROM rust:1.87-slim AS builder
 WORKDIR /build
 
-# Workspace skeleton for caching deps
-COPY Cargo.toml Cargo.lock* ./
+# Copy only what larc-keys needs — minimal workspace to avoid broken sibling deps
 COPY crates/larc-keys/Cargo.toml crates/larc-keys/
-# Stub out other workspace members so they don't block the build
-COPY crates/larc-proxy/Cargo.toml crates/larc-proxy/
-RUN mkdir -p crates/larc-keys/src crates/larc-proxy/src && \
-    echo 'fn main(){}' > crates/larc-keys/src/main.rs && \
-    echo 'fn main(){}' > crates/larc-proxy/src/main.rs && \
-    cargo build --release -p larc-keys 2>/dev/null || true
 
-# Real build
+# Synthesise a minimal workspace root
+RUN cat > Cargo.toml <<'TOML'
+[workspace]
+resolver = "2"
+members = ["crates/larc-keys"]
+
+[workspace.package]
+version      = "0.1.0"
+edition      = "2024"
+license      = "Apache-2.0"
+repository   = "https://github.com/TheLightArchitects/larc-crates"
+rust-version = "1.87"
+
+[workspace.dependencies]
+axum               = { version = "0.8", features = ["macros"] }
+tower-http         = { version = "0.6", features = ["trace"] }
+tokio              = { version = "1", features = ["full"] }
+rusqlite           = { version = "0.32", features = ["bundled"] }
+serde              = { version = "1", features = ["derive"] }
+serde_json         = "1"
+thiserror          = "2"
+tracing            = "0.1"
+uuid               = { version = "1", features = ["v4", "serde"] }
+chrono             = { version = "0.4", features = ["serde"] }
+hmac               = "0.12"
+sha2               = "0.10"
+rand               = "0.8"
+TOML
+
+# Cache dependencies with a stub binary
+RUN mkdir -p crates/larc-keys/src && echo 'fn main(){}' > crates/larc-keys/src/main.rs
+RUN cargo build --release -p larc-keys 2>&1 || true
+
+# Real source
 COPY crates/larc-keys/src crates/larc-keys/src/
-RUN touch crates/larc-keys/src/main.rs && \
-    cargo build --release -p larc-keys
+RUN touch crates/larc-keys/src/main.rs && cargo build --release -p larc-keys
 
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates libssl3 && \
-    rm -rf /var/lib/apt/lists/*
+    ca-certificates libssl3 && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /build/target/release/larc-keys /usr/local/bin/larc-keys
-
 RUN mkdir -p /data
 VOLUME ["/data"]
-
 EXPOSE 3800
 CMD ["larc-keys"]

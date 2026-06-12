@@ -2,8 +2,8 @@ app = "larc-keys"
 primary_region = "iad"
 
 [build]
-  dockerfile = "crates/larc-keys/Dockerfile"
-  build_context = "."
+  dockerfile = "Dockerfile"
+  build_context = "../../"
 
 [env]
   LARC_DATABASE_PATH = "/data/larc.db"
